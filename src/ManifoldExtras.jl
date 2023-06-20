@@ -1,5 +1,10 @@
 module ManifoldExtras
 
-# Write your package code here.
+
+function greet()
+  println("Hello ManifoldExtras")
+end
+
+export greet
 
 end
