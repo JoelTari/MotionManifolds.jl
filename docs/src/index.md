@@ -8,8 +8,8 @@ Documentation for ManifoldExtras.jl
 
 A working minimal example:
 ```jldoctest
-julia> greet()
-"Hello ManifoldExtras."
+julia> 1+3
+4
 ```
 
 Contents:
@@ -19,14 +19,22 @@ Contents:
 
 ## Library
 
+### Special Orthogonal 2
+
 ```@docs
-greet()
+SO2
 ```
+
+```@docs
+so2
+```
+
+### Special Euclidian 2
 
 ```@docs
 SE2
 ```
 
 ```@docs
-NV
+se2
 ```
