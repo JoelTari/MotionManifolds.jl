@@ -1,6 +1,7 @@
 using Documenter
 using ManifoldExtras
 
+# DocMeta.setdocmeta!(ManifoldExtras, :DocTestSetup, :(using ManifoldExtras); recursive=true)
 makedocs(
     sitename = "ManifoldExtras",
     format = Documenter.HTML(),
