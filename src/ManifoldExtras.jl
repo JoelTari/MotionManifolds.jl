@@ -1,130 +1,138 @@
 module ManifoldExtras
 
-# using Manifolds
-# using RecursiveArrayTools
 using StaticArrays
-# add another dependency to confirm the workflow
-# RecursiveArrayTools
-# StaticArrays
 
-export SO2, so2, SE2, se2, to_matrix, hat, vee, Adjm, ecpi, Log, Exp
+export SO2, so2, SE2, se2, to_matrix, hat, vee, Adjm, ecpi, Log, Exp, log_lie, exp_lie, Jr, Jrinv, Jl, Jlinv, ExpAndJr
 
-# """
-#     greet()
-#
-# Return a string that greets people.
-#
-# # Example
-# ```julia
-# julia> greet()
-# "Hello ManifoldExtras."
-# ```
-#
-# # To find out more
-# See also [documentation](https://docs.julialang.org/en/v1/manual/documentation/).
-# """
-# function greet()
-#   "Hello ManifoldExtras."
-# end
-#
-# "The Special Euclidian 2 Manifold: \$\\mathrm{SE}(n)\$"
-# const SE2LieGroup=SpecialEuclidean(2)
-# const SE3LieGroup=SpecialEuclidean(2)
-# const SO2LieGroup=SpecialOrthogonal(2)
-# const SO3LieGroup=SpecialOrthogonal(2)
-# # const fkso2=SMatrix{2,2,Float64,4}
-# # const fkse2=SMatrix{3,3,Float64,9}
-#
-# """
-#     NV
-#
-# NV is the number of nodes ``n``, valued 6.
-#
-# # Example
-# ```jldoctest; setup = :(using ManifoldExtras)
-# julia> NV
-# 6
-# ```
-# """
-# const NV = 6
-#
-# const is_point = Manifolds.is_point # TODO: export Manifolds instead
-#
-# "Type alias"
-# # const SE2=ArrayPartition{Float64, Tuple{SVector{2, Float64}, SMatrix{2,2,Float64, 4}}}
-# # const SE3=ArrayPartition{Float64, Tuple{SVector{3, Float64}, SMatrix{3,3,Float64, 9}}}
-# # const SO2=SMatrix{2,2,Float64,4}
-# # const SO3=SMatrix{3,3,Float64,9}
-
+"SO2"
 struct SO2
   th::Float64 # not necessary inside [-pi,pi]
   c::Float64 # cos
   s::Float64 # sin
 end
 SO2(th::Float64) = SO2(th,cos(th),sin(th))
-SO2(R::SMatrix{2,2,Float64}) = SO2(atan(R[2,1]/R[1,1]),R[1,1],R[2,1])
+SO2(R::SMatrix{2,2,Float64,4}) = SO2(atan(R[2,1],R[1,1]),R[1,1],R[2,1]) # TODO: check that R is legit orthog
+SO2(R::Matrix{Float64}) = begin
+  if size(R) != (2,2)
+    throw(DimensionMismatch)
+  else
+    @info "SO2 ctor: dynamic matrix input"
+    SO2(atan(R[2,1],R[1,1]),R[1,1],R[2,1])
+  end
+end
 
+"SE2"
 struct SE2
   t::SVector{2,Float64}
   rot::SO2
 end
 SE2(x::Float64,y::Float64,th::Float64) = SE2([x,y],SO2(th))
+SE2(t::Vector{Float64},rot::SO2) = begin
+  if length(t) != 2
+    throw(DimensionMismatch)
+  else
+    @info "SE2 ctor: dynamic vector input"
+    SE2(SA_F64[t[1],t[2]],rot)
+  end
+end
+SE2(t::Vector{Float64},th::Float64) = SE2(t,SO2(th))
 
+"so2"
 struct so2
   w::Float64
 end
 
+"se2"
 struct se2
-  # a.k.a. screw
+  # a.k.a. screw (se3 would be the twist)
   vx::Float64
   vy::Float64
   w::Float64
 end
+se2(tau::SVector{3,Float64}) = se2(tau...)
+se2(tau::Vector{Float64}) = begin
+  if length(tau)!=3
+    throw(DimensionMismatch)
+  else
+    @info "se2 ctor: dynamic vector input"
+    se2(tau...)
+  end
+end
 
+"""
+    ecpi
+
+Angle value of SO2 object, given in bounds [-π,π]
+"""
 ecpi(r::SO2) = atan(r.s,r.c) 
 # force representation between [-pi,pi]; r.th may be outside (use case: external readability)
 
+"to_matrix"
 to_matrix(r::SO2) = SA_F64[r.c -r.s;r.s r.c]
-to_matrix(X::SE2) = SA_F64[to_matrix(X.rot) X.t;0 0 1]
+to_matrix(X::SE2) = begin
+  R = to_matrix(X.rot)
+  @info typeof(R)
+  SA_F64[R[1,1] R[1,2] X.t[1]
+         R[2,1] R[2,2] X.t[2]
+         0      0      1    ]
+end
 to_matrix(w::so2) = SA_F64[0 -w.w;w.w 0]
-to_matrix(sk::se2) = SA_F64[to_matrix(sk.w) [sk.vx;sk.vy];0 0 0]
+to_matrix(sk::se2) = begin
+  SA_F64[0       -sk.w    sk.vx
+         sk.w    0        sk.vy
+         0       0        0    ]
+end
 
+"vee"
 vee(w::so2) = w.w
-vee(sk::se2) = SVector{3,Float64}[sk.vx sk.vy sk.w]
+vee(sk::se2) = SA_F64[sk.vx,sk.vy,sk.w]
+
+"hat"
 hat(w::Float64) = so2(w)
 hat(tau::SVector{3,Float64}) = se2(tau...)
+hat(tau::Vector{Float64}) = begin
+  @info "hat ctor: dynamic vector input"
+  se2(tau...)
+end
 
 import Base: inv
+"inv"
 Base.:inv(rot::SO2) = SO2(-rot.th,rot.c,-rot.s)
 Base.:inv(X::SE2) = SE2(-inv(X.rot)*X.t,inv(X.rot))
 
 import Base: *
+"*"
 function Base.:*(rot1::SO2,rot2::SO2)  
   SO2(rot1.th+rot2.th)
 end
-
 function Base.:*(X1::SE2,X2::SE2)
   SE2(X1.rot*X2.rot,X1.t + X1.rot*X2.t)
 end
 
+"""
+    Adjm
 
+The adjoint matrix.
+"""
 Adjm(rot::SO2) = 1
 
 function Adjm(X::SE2)
-SA_F64[X.rot.c -X.rot.s   -X.t[2]
-       X.rot.s  X.rot.c    X.t[1]
+SA_F64[X.rot.c -X.rot.s    X.t[2]
+       X.rot.s  X.rot.c   -X.t[1]
        0        0          1      ]
 end
 
-struct Jexp end
-
+"exp_lie"
 exp_lie(w::so2)=SO2(w.w)
-Exp(w::Float64) = exp_lie(hat(w))
 
-
+# """
+#     exp_lie
+#
+# Returns the Group Manifold object from a Lie algebra element.
+# """
 function exp_lie(sk::se2)
   # technique from manifcpp
-  # credit: sola/deray
+  # credit: sola/deray & contributors of https://github.com/artivis/manif
   w_sq = sk.w*sk.w    
   # K1 is  sin(w)÷w 
   # K2 is  (1-cos(w))÷w     
@@ -135,13 +143,28 @@ function exp_lie(sk::se2)
     K1 = sin(sk.w)/sk.w;
     K2 = (1-cos(sk.w))/sk.w;
   end
-  t = [K1 -K2;K2 K1]*[sk.vx;sk.vy];
+  t = SA_F64[K1 -K2;K2 K1]*SA_F64[sk.vx;sk.vy];
   SE2(t,Exp(sk.w)), K1, K2, w_sq
 end
 
-Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau))[1] 
+"Exp"
+Exp(w::Float64) = exp_lie(hat(w))
+Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau))[1]
+Exp(tau::Vector{Float64}) = begin
+  @info "Exp function call: dynamic input vector"
+  Exp(SA_F64[tau...])
+end
 
-function Exp(tau::SVector{3,Float64}, Nothing)
+"""
+    ExpAndJr
+
+Returns the group manifold object directly from a vector representation of a Lie algebra element.
+Also returns the right Jacobian, as it allows to save some computations compared to doing the 2 things
+separately.
+"""
+function ExpAndJr(tau::SVector{3,Float64})
+  # technique from manifcpp
+  # credit: sola/deray & contributors of https://github.com/artivis/manif
   expmap_value, K1 , K2, w_sq = exp_lie(hat(tau))
   vx = tau[1]; vy=tau[2]; w=tau[3]
   if w_sq < eps(Float64)
@@ -157,98 +180,94 @@ function Exp(tau::SVector{3,Float64}, Nothing)
   expmap_value, Jr_exp
 end
 
+"log_lie"
 log_lie(rot::SO2) = so2(atan(rot.s,rot.c)) # non-bijectivity
 Log(rot::SO2)=vee(log_lie(rot))
 
+function log_lie(X::SE2)
+  # technique from manifcpp
+  # credit: sola/deray & contributors of https://github.com/artivis/manif
+  th=ecpi(X.rot)
+  th_sq = th*th
+  # K1 is  sin(w)÷w 
+  # K2 is  (1-cos(w))÷w     
+  if th_sq < eps(Float64)
+    K1 = 1 - th_sq/6
+    K2 = .5*th - 1.0/24*th*th_sq
+  else
+    K1 = sin(th)/th;
+    K2 = (1-cos(th))/th;
+  end
+  Vinv =SA_F64[K1 K2;-K2 K1]/(K1*K1+K2*K2)
+  se2(Vinv*X.t ..., th)
+end
 
-# TODO: Adjm SE2 SO2
-# TODO: Exp Log (with optional jacobian)
-#
+"Log"
+Log(X::SE2) = vee(log_lie(X))
+
+"Jrinv"
+function Jrinv(sk::se2)
+  # technique from manifcpp
+  # credit: sola/deray & contributors of https://github.com/artivis/manif
+  vx = sk.vx; vy=sk.vy; w=sk.w
+  sw = sin(w)
+  cw = cos(w)
+  wsw = w*sw
+  wcw = w*cw
+  w_sq = w*w
+  J12 = -w/2
+  J21 = -J12
+  if (w_sq > eps(Float64))
+    J11= - wsw/(2*cw-2)
+    J22=J11
+    dd=2*w*(cw-1)
+    J13=(wsw*vx+ wcw*vy -w*vy + 2*vx*cw -2*vx)/dd
+    J23=(-wcw*vx+wsw*vy+w*vx+ 2*vy*cw-2*vy)/dd
+  else
+    J11=1-w_sq/12.0
+    J22=J11
+    J13 = vy/2+ w*vx/12
+    J23 = -vx/2+ w*vy/12
+  end
+  J31=0
+  J32=0
+  J33=1
+  SA_F64[J11 J12 J13;J21 J22 J23;J31 J32 J33]
+end
+
+"Jr"
+function Jr(sk::se2)
+  # technique from manifcpp
+  # credit: sola/deray & contributors of https://github.com/artivis/manif
+  # K1 is  sin(w)÷w 
+  # K2 is  (1-cos(w))÷w     
+  vx = sk.vx; vy=sk.vy; w=sk.w
+  w_sq = w*w
+  if w_sq < eps(Float64)
+    K1 = 1 - w_sq/6
+    K2 = .5*sk.w - 1.0/24*sk.w*w_sq
+    J13 = -vy/2.0+w*vx/6.0
+    J23 =  vx/2.0+w*vy/6.0
+  else
+    sw = sin(w)
+    cw = cos(w)
+    K1 = sw/sk.w;
+    K2 = (1-cw)/sk.w;
+    J13 = (-vy+w*vx+vy*cw-vx*sw)/w_sq
+    J23 = ( vx+w*vy-vx*cw-vy*sw)/w_sq
+  end
+  SA_F64[K1 K2 J13;-K2 K1 J23;0 0 1]
+end
+
+"Jlinv"
+Jlinv(sk::se2) = Jrinv( hat(-vee(sk)) )
+
+"Jl"
+Jl(sk::se2) = Jr( hat(-vee(sk)) )
+
+
 # TODO: to_quat for SO3, to_S1 (unit circle) for SO2
-
-# #multiply
-#
-# "Construct a SO2 object, compatible with Manifolds.jl"
-# function makeSO2(a::Number)
-#   aa=Float64(a)
-#   SA_F64[cos(aa) -sin(aa);sin(aa) cos(aa)]
-# end
-#
-#
-# "get angle from an SO2 object, compatible with Manifolds.jl"
-# function angleSO2(R::Union{Matrix{Float64},SMatrix{2,2,Float64}})
-#   atan(R[2,1],R[1,1])
-# end
-#
-# "extract translation vector from SE2"
-# function getTranslationComponent(X::SE2)
-#   SA_F64[X[1:2]...]
-# end
-#
-# "extract rotation matrix from SE2"
-# function getRotationComponent(X::SE2)
-#   # reshape(SA_F64[X[3:end]...],2,2)
-#   SMatrix{2,2,Float64,4}([X[3:end]...])
-# end
-#
-# # "extract translation vector from SE3"
-# # function getTranslationComponent(X::ArrayPartition{Float64, Tuple{SVector{3, Float64}, SMatrix{3,3,Float64, 9}}})
-# # end
-# # "extract rotation matrix from SE3"
-# # function getRotationComponent(X::ArrayPartition{Float64, Tuple{SVector{3, Float64}, SMatrix{3,3,Float64, 9}}})
-# #   reshape(SA_F64[X[3:end]...],2,2)
-# # end
-#
-#
-# "get angle from an SE2 object, compatible with Manifolds.jl"
-# function angleSE2(X::SE2)
-#   angleSO2(getRotationComponent(X))
-# end
-#
-#
-# "Construct an SE2 object from x,y,a."
-# function makeSE2(x::Number,y::Number,a::Number)
-#   ArrayPartition(SA_F64[Float64(x),Float64(y)],makeSO2(Float64(a)))
-# end
-#
-# "Construct an SE2 object from (t, angle), compatible with Manifolds.jl"
-# function makeSE2(t,a::Number)
-#   ArrayPartition(SA_F64[t...],makeSO2(Float64(a)))
-# end
-#
-# "Construct an SE2 object from (t, R), compatible with Manifolds.jl"
-# function makeSE2(t,R::SO2)
-#   ArrayPartition(SA_F64[t...],R)
-# end
-#
-# "hat operation"
-# function hat(a::Float64)
-#   SA_F64[0 -a;a 0]
-# end
-# "vee operation"
-# function vee(Sk::SMatrix{2,2,Float64,4})
-#   Sk[2,1]
-# end
-#
-# # "hat operation"
-# # function hat(a::Float64)
-# #   SA_F64[0 -a;a 0]
-# # end
-# # "vee operation"
-# # function vee(Sk::SMatrix{2,2,Float64,4})
-# #   Sk[2,1]
-# # end
-#
-# # function 
-# #
-# # end
-# #
-# # hat
-# # vee
-# # Exp
-# # Log
-# # Adjm adjoint matrix
-# #
-# # rpySE3 quatSE3
+# TODO: SO3 SE3 so3 se3
+# TODO: approx check between several SE2 se2 SO2 so2
 
 end
