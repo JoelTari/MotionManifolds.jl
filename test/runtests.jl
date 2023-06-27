@@ -15,12 +15,13 @@ tau0 = SA_F64[0,0,0]
 rand1=rand()
 sk = se2(taud)
 sk = se2(tau)
-Xsk = ManifoldExtras.exp_lie(sk)
+Xsk = ManifoldExtras.exp_lie(sk)[1]
 # 
 # to_matrix(Exp(tau))
 # to_matrix(se2(tau))
 # TODO: hat vee
 # TODO: r/l jacobians
+# TODO: multiply/inversion
 
 println(":: Starting the test set ::")
 
@@ -46,5 +47,7 @@ println(":: Starting the test set ::")
     @test Jr(se2(tau)) ≈ inv(Jrinv(se2(tau))) 
     @test Jr(se2(tau)) ≈ ExpAndJr(tau)[2]
     @test Jl(se2(tauOOB)) ≈ inv(Jlinv(se2(tauOOB))) 
+    @test to_matrix(inv(X)) ≈ inv(to_matrix(X))
+    @test to_matrix(inv(Xsk)) ≈ inv(to_matrix(Xsk))
     # @test_ X.rot = pi/6 # immutable
 end

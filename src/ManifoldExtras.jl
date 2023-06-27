@@ -6,18 +6,23 @@ export SO2, so2, SE2, se2, to_matrix, hat, vee, Adjm, ecpi, Log, Exp, log_lie, e
 
 "SO2"
 struct SO2
-  th::Float64 # not necessary inside [-pi,pi]
+  th::Float64 # not necessarily inside [-pi,pi]
   c::Float64 # cos
   s::Float64 # sin
 end
-SO2(th::Float64) = SO2(th,cos(th),sin(th))
-SO2(R::SMatrix{2,2,Float64,4}) = SO2(atan(R[2,1],R[1,1]),R[1,1],R[2,1]) # TODO: check that R is legit orthog
+SO2(th::Float64) = begin
+  sth = sin(th)
+  cth = cos(th)
+  SO2(th,cth,sth)
+end
+SO2(cosinus::Float64, sinus::Float64) = SO2(atan(sinus, cosinus), cosinus, sinus)
+SO2(R::SMatrix{2,2,Float64,4}) = SO2(R[1,1],R[2,1]) # TODO: check that R is legit orthogonal
 SO2(R::Matrix{Float64}) = begin
   if size(R) != (2,2)
     throw(DimensionMismatch)
   else
     @info "SO2 ctor: dynamic matrix input"
-    SO2(atan(R[2,1],R[1,1]),R[1,1],R[2,1])
+    SO2(atan(R[1,1],R[2,1]))
   end
 end
 
@@ -26,7 +31,7 @@ struct SE2
   t::SVector{2,Float64}
   rot::SO2
 end
-SE2(x::Float64,y::Float64,th::Float64) = SE2([x,y],SO2(th))
+SE2(x::Float64,y::Float64,th::Float64) = SE2(SA_F64[x,y],SO2(th))
 SE2(t::Vector{Float64},rot::SO2) = begin
   if length(t) != 2
     throw(DimensionMismatch)
@@ -65,6 +70,7 @@ end
 Angle value of SO2 object, given in bounds [-π,π]
 """
 ecpi(r::SO2) = atan(r.s,r.c) 
+ecpi(a::Float64) = atan(sin(a),cos(a)) 
 # force representation between [-pi,pi]; r.th may be outside (use case: external readability)
 
 "to_matrix"
@@ -95,19 +101,22 @@ hat(tau::Vector{Float64}) = begin
   se2(tau...)
 end
 
-import Base: inv
-"inv"
-Base.:inv(rot::SO2) = SO2(-rot.th,rot.c,-rot.s)
-Base.:inv(X::SE2) = SE2(-inv(X.rot)*X.t,inv(X.rot))
-
 import Base: *
 "*"
 function Base.:*(rot1::SO2,rot2::SO2)  
   SO2(rot1.th+rot2.th)
 end
-function Base.:*(X1::SE2,X2::SE2)
-  SE2(X1.rot*X2.rot,X1.t + X1.rot*X2.t)
+function Base.:*(rot::SO2, t::SVector{2,Float64}) # action SO2*point
+  to_matrix(rot)*t
 end
+function Base.:*(X1::SE2,X2::SE2)
+  SE2(X1.t + X1.rot*X2.t,X1.rot*X2.rot)
+end
+
+import Base: inv
+"inv"
+Base.:inv(rot::SO2) = SO2(-rot.th,rot.c,-rot.s)
+Base.:inv(X::SE2) = SE2(-(inv(X.rot)*X.t),inv(X.rot))
 
 """
     Adjm
