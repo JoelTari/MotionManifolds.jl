@@ -4,12 +4,27 @@ using StaticArrays
 
 export SO2, so2, SE2, se2, to_matrix, hat, vee, Adjm, ecpi, Log, Exp, log_lie, exp_lie, Jr, Jrinv, Jl, Jlinv, ExpAndJr
 
+export SO2FromMat
+
 "SO2"
 struct SO2
   th::Float64 # not necessarily inside [-pi,pi]
   c::Float64 # cos
   s::Float64 # sin
 end
+# generic boilerplate stuff,
+# but you get lectured with logs
+SO2(th)=begin
+  @info "less efficient default method, non float64 scalar input"
+  sth = sin(th)
+  cth = cos(th)
+  SO2(th,cth,sth)
+end 
+SO2(co,si)=begin
+  @info "less effficient default method for si,co ctor"
+  SO2(atan(si, co), co, si)
+end
+# prefer methods
 SO2(th::Float64) = begin
   sth = sin(th)
   cth = cos(th)
@@ -17,7 +32,16 @@ SO2(th::Float64) = begin
 end
 SO2(cosinus::Float64, sinus::Float64) = SO2(atan(sinus, cosinus), cosinus, sinus)
 SO2(R::SMatrix{2,2,Float64,4}) = SO2(R[1,1],R[2,1]) # TODO: check that R is legit orthogonal
-SO2(R::Matrix{Float64}) = begin
+SO2FromMat(R::Matrix{Float64}) = begin
+  if size(R) != (2,2)
+    throw(DimensionMismatch)
+  else
+    @info "SO2 ctor: dynamic matrix input"
+    SO2(atan(R[1,1],R[2,1]))
+  end
+end
+SO2FromMat(R::Matrix)=begin
+  @info "less efficient default method for R matrix"
   if size(R) != (2,2)
     throw(DimensionMismatch)
   else
@@ -31,6 +55,10 @@ struct SE2
   t::SVector{2,Float64}
   rot::SO2
 end
+SE2(x,y,th)= begin
+  @info "less efficient default method from SE2 (requires conversions)"
+  SE2(convert(Float64,x),convert(Float64,y),convert(Float64,th))
+end
 SE2(x::Float64,y::Float64,th::Float64) = SE2(SA_F64[x,y],SO2(th))
 SE2(t::Vector{Float64},rot::SO2) = begin
   if length(t) != 2
@@ -40,7 +68,17 @@ SE2(t::Vector{Float64},rot::SO2) = begin
     SE2(SA_F64[t[1],t[2]],rot)
   end
 end
+SE2(t::Vector, th)=begin
+  @assert(length(t)==2)
+  @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
+  SE2(convert(Vector{Float64}, t), SO2(th))
+end
 SE2(t::Vector{Float64},th::Float64) = SE2(t,SO2(th))
+SE2(X::SMatrix{3,3,Float64}) = SE2(X[1:2,3], SO2(X[1:2,1:2]))
+SE2(X::Matrix) = begin
+  @assert(size(X)==(3,3))
+  SE2(X[1:2,3], SO2(X[1:2,1:2]))
+end
 
 "so2"
 struct so2
@@ -63,6 +101,11 @@ se2(tau::Vector{Float64}) = begin
     se2(tau...)
   end
 end
+se2(tau)=begin
+  @assert length(tau)==3
+  @info "less efficient default method from se2 (requires conversion to vector{Float64})"
+  se2(convert(Vector{Float64},tau))
+end
 
 """
     ecpi
@@ -71,6 +114,10 @@ Angle value of SO2 object, given in bounds [-π,π]
 """
 ecpi(r::SO2) = atan(r.s,r.c) 
 ecpi(a::Float64) = atan(sin(a),cos(a)) 
+ecpi(a) = begin
+  @info "less efficient method for ecpi (requires conversion to float64)"
+  ecpi(convert(Float64,a))
+end
 # force representation between [-pi,pi]; r.th may be outside (use case: external readability)
 
 "to_matrix"
@@ -145,9 +192,9 @@ function exp_lie(sk::se2)
   w_sq = sk.w*sk.w    
   # K1 is  sin(w)÷w 
   # K2 is  (1-cos(w))÷w     
-  if w_sq < eps(Float64)
-    K1 = 1 - w_sq/6
-    K2 = .5*sk.w - 1.0/24*sk.w*w_sq
+  if w_sq < eps(Float64)*10e9 # WARN_EPS
+    K1 = 1 - (1.0/6.0)*w_sq
+    K2 = .5*sk.w - (1.0/24.0)*sk.w*w_sq
   else
     K1 = sin(sk.w)/sk.w;
     K2 = (1-cos(sk.w))/sk.w;
@@ -176,7 +223,7 @@ function ExpAndJr(tau::SVector{3,Float64})
   # credit: sola/deray & contributors of https://github.com/artivis/manif
   expmap_value, K1 , K2, w_sq = exp_lie(hat(tau))
   vx = tau[1]; vy=tau[2]; w=tau[3]
-  if w_sq < eps(Float64)
+  if w_sq < eps(Float64)*10e9 # WARN_EPS
     J13 = -vy/2.0+w*vx/6.0
     J23 =  vx/2.0+w*vy/6.0
   else
@@ -200,9 +247,9 @@ function log_lie(X::SE2)
   th_sq = th*th
   # K1 is  sin(w)÷w 
   # K2 is  (1-cos(w))÷w     
-  if th_sq < eps(Float64)
-    K1 = 1 - th_sq/6
-    K2 = .5*th - 1.0/24*th*th_sq
+  if th_sq < eps(Float64)*10e9 # WARN_EPS
+    K1 = 1 - (1.0/6)*th_sq
+    K2 = .5*th - (1.0/24.0)*th*th_sq 
   else
     K1 = sin(th)/th;
     K2 = (1-cos(th))/th;
@@ -226,14 +273,14 @@ function Jrinv(sk::se2)
   w_sq = w*w
   J12 = -w/2
   J21 = -J12
-  if (w_sq > eps(Float64))
+  if (w_sq > eps(Float64)*10e9) # WARN_EPS
     J11= - wsw/(2*cw-2)
     J22=J11
     dd=2*w*(cw-1)
     J13=(wsw*vx+ wcw*vy -w*vy + 2*vx*cw -2*vx)/dd
     J23=(-wcw*vx+wsw*vy+w*vx+ 2*vy*cw-2*vy)/dd
   else
-    J11=1-w_sq/12.0
+    J11=1.0-w_sq/12.0
     J22=J11
     J13 = vy/2+ w*vx/12
     J23 = -vx/2+ w*vy/12
@@ -252,7 +299,7 @@ function Jr(sk::se2)
   # K2 is  (1-cos(w))÷w     
   vx = sk.vx; vy=sk.vy; w=sk.w
   w_sq = w*w
-  if w_sq < eps(Float64)
+  if w_sq < eps(Float64)*10e9 # WARN_EPS
     K1 = 1 - w_sq/6
     K2 = .5*sk.w - 1.0/24*sk.w*w_sq
     J13 = -vy/2.0+w*vx/6.0
