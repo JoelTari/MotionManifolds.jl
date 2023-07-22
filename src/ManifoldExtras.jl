@@ -200,12 +200,13 @@ function exp_lie(sk::se2)
     K2 = (1-cos(sk.w))/sk.w;
   end
   t = SA_F64[K1 -K2;K2 K1]*SA_F64[sk.vx;sk.vy];
-  SE2(t,Exp(sk.w)), K1, K2, w_sq
+  # returns a named tuple
+  (SE2=SE2(t,Exp(sk.w)), K1=K1, K2=K2, w_sq=w_sq)
 end
 
 "Exp"
 Exp(w::Float64) = exp_lie(hat(w))
-Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau))[1]
+Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau)).SE2
 Exp(tau::Vector{Float64}) = begin
   @info "Exp function call: dynamic input vector"
   Exp(SA_F64[tau...])
