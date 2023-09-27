@@ -30,13 +30,13 @@ end
 # generic boilerplate stuff,
 # but you get lectured with logs
 SO2(th)=begin
-  @info "less efficient default method, non float64 scalar input"
+  # @info "less efficient default method, non float64 scalar input"
   sth = sin(th)
   cth = cos(th)
   SO2(th,cth,sth)
 end 
 SO2(co,si)=begin
-  @info "less effficient default method for si,co ctor"
+  # @info "less effficient default method for si,co ctor"
   SO2(atan(si, co), co, si)
 end
 # prefer methods
@@ -51,16 +51,16 @@ SO2FromMat(R::Matrix{Float64}) = begin
   if size(R) != (2,2)
     throw(DimensionMismatch)
   else
-    @info "SO2 ctor: dynamic matrix input"
+    # @info "SO2 ctor: dynamic matrix input"
     SO2(atan(R[1,1],R[2,1]))
   end
 end
 SO2FromMat(R::Matrix)=begin
-  @info "less efficient default method for R matrix"
+  # @info "less efficient default method for R matrix"
   if size(R) != (2,2)
     throw(DimensionMismatch)
   else
-    @info "SO2 ctor: dynamic matrix input"
+    # @info "SO2 ctor: dynamic matrix input"
     SO2(atan(R[1,1],R[2,1]))
   end
 end
@@ -71,7 +71,7 @@ struct SE2
   rot::SO2
 end
 SE2(x,y,th)= begin
-  @info "less efficient default method from SE2 (requires conversions)"
+  # @info "less efficient default method from SE2 (requires conversions)"
   SE2(convert(Float64,x),convert(Float64,y),convert(Float64,th))
 end
 SE2(x::Float64,y::Float64,th::Float64) = SE2(SA_F64[x,y],SO2(th))
@@ -79,13 +79,13 @@ SE2(t::Vector{Float64},rot::SO2) = begin
   if length(t) != 2
     throw(DimensionMismatch)
   else
-    @info "SE2 ctor: dynamic vector input"
+    # @info "SE2 ctor: dynamic vector input"
     SE2(SA_F64[t[1],t[2]],rot)
   end
 end
 SE2(t::Vector, th)=begin
   @assert(length(t)==2)
-  @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
+  # @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
   SE2(convert(Vector{Float64}, t), SO2(th))
 end
 SE2(t::Vector{Float64},th::Float64) = SE2(t,SO2(th))
@@ -112,13 +112,13 @@ se2(tau::Vector{Float64}) = begin
   if length(tau)!=3
     throw(DimensionMismatch)
   else
-    @info "se2 ctor: dynamic vector input"
+    # @info "se2 ctor: dynamic vector input"
     se2(tau...)
   end
 end
 se2(tau)=begin
   @assert length(tau)==3
-  @info "less efficient default method from se2 (requires conversion to vector{Float64})"
+  # @info "less efficient default method from se2 (requires conversion to vector{Float64})"
   se2(convert(Vector{Float64},tau))
 end
 
@@ -130,7 +130,7 @@ Angle value of SO2 object, given in bounds [-π,π]
 ecpi(r::SO2) = atan(r.s,r.c) 
 ecpi(a::Float64) = atan(sin(a),cos(a)) 
 ecpi(a) = begin
-  @info "less efficient method for ecpi (requires conversion to float64)"
+  # @info "less efficient method for ecpi (requires conversion to float64)"
   ecpi(convert(Float64,a))
 end
 # force representation between [-pi,pi]; r.th may be outside (use case: external readability)
@@ -139,7 +139,7 @@ end
 to_matrix(r::SO2) = SA_F64[r.c -r.s;r.s r.c]
 to_matrix(X::SE2) = begin
   R = to_matrix(X.rot)
-  @info typeof(R)
+  # @info typeof(R)
   SA_F64[R[1,1] R[1,2] X.t[1]
          R[2,1] R[2,2] X.t[2]
          0      0      1    ]
@@ -159,7 +159,7 @@ vee(sk::se2) = SA_F64[sk.vx,sk.vy,sk.w]
 hat(w::Float64) = so2(w)
 hat(tau::SVector{3,Float64}) = se2(tau...)
 hat(tau::Vector{Float64}) = begin
-  @info "hat ctor: dynamic vector input"
+  # @info "hat ctor: dynamic vector input"
   se2(tau...)
 end
 
@@ -223,7 +223,7 @@ end
 Exp(w::Float64) = exp_lie(hat(w))
 Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau)).SE2
 Exp(tau::Vector{Float64}) = begin
-  @info "Exp function call: dynamic input vector"
+  # @info "Exp function call: dynamic input vector"
   Exp(SA_F64[tau...])
 end
 
