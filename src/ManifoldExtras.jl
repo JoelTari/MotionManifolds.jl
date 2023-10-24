@@ -171,6 +171,9 @@ end
 function Base.:*(rot::SO2, t::SVector{2,Float64}) # action SO2*point
   to_matrix(rot)*t
 end
+function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
+  pose.t + pose.rot*t
+end
 function Base.:*(X1::SE2,X2::SE2)
   SE2(X1.t + X1.rot*X2.t,X1.rot*X2.rot)
 end
