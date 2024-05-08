@@ -52,7 +52,7 @@ SO2FromMat(R::Matrix{Float64}) = begin
     throw(DimensionMismatch)
   else
     # @info "SO2 ctor: dynamic matrix input"
-    SO2(atan(R[1,1],R[2,1]))
+    SO2(atan(R[2,1],R[1,1]))
   end
 end
 SO2FromMat(R::Matrix)=begin
@@ -61,7 +61,7 @@ SO2FromMat(R::Matrix)=begin
     throw(DimensionMismatch)
   else
     # @info "SO2 ctor: dynamic matrix input"
-    SO2(atan(R[1,1],R[2,1]))
+    SO2(atan(R[2,1],R[1,1]))
   end
 end
 
