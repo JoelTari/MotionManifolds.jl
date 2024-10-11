@@ -13,7 +13,7 @@
 # See the Licence for the specific language governing permissions and 
 # limitations under the Licence. 
 
-using ManifoldExtras, StaticArrays
+using MotionManifolds, StaticArrays
 using Test
 
 println("Declaring variables for tests")
@@ -34,11 +34,11 @@ tau0 = SA_F64[0, 0, 0]
 rand1 = rand()
 sk = se2(taud)
 sk = se2(tau)
-Xsk = ManifoldExtras.exp_lie(sk)[1]
+Xsk = MotionManifolds.exp_lie(sk)[1]
 
 println(":: Starting the test set ::")
 
-@testset "ManifoldExtras.jl" begin
+@testset "MotionManifolds.jl" begin
     @test R ≈ to_matrix(SO2(th))
     @test to_matrix(SO2(th + th2)) ≈ to_matrix(SO2(th) * SO2(th2))
     @test SO2(th + th2).th ≈ (SO2(th) * SO2(th2)).th

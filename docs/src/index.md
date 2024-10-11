@@ -1,10 +1,10 @@
-# ManifoldExtras.jl
+# MotionManifolds.jl
 
 ```@meta
-DocTestSetup = :(using ManifoldExtras)
+DocTestSetup = :(using MotionManifolds)
 ```
 
-Documentation for ManifoldExtras.jl
+Documentation for MotionManifolds.jl
 
 A working minimal example:
 ```jldoctest

@@ -1,11 +1,11 @@
 using Documenter
-using ManifoldExtras
+using MotionManifolds
 
-# DocMeta.setdocmeta!(ManifoldExtras, :DocTestSetup, :(using ManifoldExtras); recursive=true)
+# DocMeta.setdocmeta!(MotionManifolds, :DocTestSetup, :(using MotionManifolds); recursive=true)
 makedocs(
-    sitename = "ManifoldExtras",
+    sitename = "MotionManifolds",
     format = Documenter.HTML(),
-    modules = [ManifoldExtras]
+    modules = [MotionManifolds]
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
