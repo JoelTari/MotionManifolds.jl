@@ -1,15 +1,22 @@
 # MotionManifolds.jl
 
 ```@meta
-DocTestSetup = :(using MotionManifolds)
+DocTestSetup = :(using MotionManifolds, StaticArrays)
 ```
 
-Documentation for MotionManifolds.jl
+# Overview
+
+Documentation for MotionManifolds.jl, a small library to manipulate matrix Lie grousp
+frequently encountered in robotics.
 
 A working minimal example:
+
 ```jldoctest
-julia> 1+3
-4
+julia> skew(SA_F64[1,2,3])
+3×3 SMatrix{3, 3, Float64, 9} with indices SOneTo(3)×SOneTo(3):
+  0.0  -3.0   2.0
+  3.0   0.0  -1.0
+ -2.0   1.0   0.0
 ```
 
 Contents:
@@ -19,71 +26,62 @@ Contents:
 
 ## Library
 
-### Special Orthogonal 2
+The convention is that Lie groups are denoted with upper case letters, while 
+their respective Lie algebra are denoted with lower case letters.
 
+### 
+
+Special Orthogonal 2:
 ```@docs
 SO2
-```
-
-```@docs
 so2
 ```
-
-### Special Euclidian 2
-
+Special Euclidian 2
 ```@docs
 SE2
-```
-
-```@docs
 se2
+```
+### Special Orthogonal 3
+
+Special Orthogonal 3:
+```@docs
+SO3
+so3
+so3(uw::SVector{3,Float64})
+```
+Special Euclidian 3
+```@docs
+SE3
+se3
 ```
 
 ## Manifold manipulations
 
 ```@docs
-hat
+*
+inv
 ```
 
 ```@docs
+hat
+wedge
 vee
 ```
 
 ```@docs
 exp_lie
-```
-
-```@docs
 log_lie
-```
-
-```@docs
-Log
-```
-
-```@docs
 Exp
-```
-
-```@docs
+Log
 Adjm
 ```
 
-## Derivatives
+## Computation of derivatives
 
 ```@docs
 Jr
-```
-
-```@docs
 Jrinv
-```
-
-```@docs
 Jl
-```
-
-```@docs
 Jlinv
 ```
 
@@ -94,9 +92,8 @@ ExpAndJr
 ## Utils
 
 ```@docs
+skew
+is_skew
 to_matrix
-```
-
-```@docs
 ecpi
 ```

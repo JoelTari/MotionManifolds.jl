@@ -1,16 +1,5 @@
-using Documenter
-using MotionManifolds
+using Documenter, MotionManifolds, StaticArrays
 
-# DocMeta.setdocmeta!(MotionManifolds, :DocTestSetup, :(using MotionManifolds); recursive=true)
-makedocs(
-    sitename = "MotionManifolds",
-    format = Documenter.HTML(),
-    modules = [MotionManifolds]
-)
+DocMeta.setdocmeta!(MotionManifolds, :DocTestSetup, :(using StaticArrays, MotionManifolds); recursive=true)
 
-# Documenter can also automatically deploy documentation to gh-pages.
-# See "Hosting Documentation" and deploydocs() in the Documenter manual
-# for more information.
-#=deploydocs(
-    repo = "<repository url>"
-)=#
+makedocs(sitename = "MotionManifolds", modules = [MotionManifolds], doctest = true)
