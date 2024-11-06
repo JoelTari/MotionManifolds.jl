@@ -598,40 +598,70 @@ end
 
 import Base: *
 """
-    *
+    *(rot1::SO2, rot2::SO2)
 """
 function Base.:*(rot1::SO2, rot2::SO2)
     SO2(rot1.th + rot2.th)
 end
+"""
+    *(rot::SO2, t::SVector{2,Float64})
+"""
 function Base.:*(rot::SO2, t::SVector{2,Float64}) # action SO2*point
     to_matrix(rot) * t
 end
+"""
+    *(pose::SE2, t::SVector{2,Float64}) 
+"""
 function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
     pose.t + pose.rot * t
 end
+"""
+    *(X1::SE2, X2::SE2)
+"""
 function Base.:*(X1::SE2, X2::SE2)
     SE2(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
 end
+"""
+    *(Xr1::SO3,Xr2::SO3)
+"""
 function Base.:*(Xr1::SO3,Xr2::SO3)
   SO3(Xr1.R*Xr2.R)
 end
+"""
+    *(X1::SE3, X2::SE3)
+"""
 function Base.:*(X1::SE3, X2::SE3)
     SE3(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
 end
+"""
+    *(rot::SO3, t::SVector{3,Float64})
+"""
 function Base.:*(rot::SO3, t::SVector{3,Float64}) # action SO3*point
     rot.R * t
 end
+"""
+    *(rot1::SO2, rot2::SO2)
+"""
 function Base.:*(pose::SE3, t::SVector{3,Float64}) # action SE3*point
     pose.t + pose.rot * t
 end
 
 import Base: inv
 """
-    inv
+    inv(rot::SO2)
 """
 Base.:inv(rot::SO2) = SO2(-rot.th, rot.c, -rot.s)
+"""
+    inv(X::SE2)
+"""
 Base.:inv(X::SE2) = SE2(-(inv(X.rot) * X.t), inv(X.rot))
+"""
+    inv(rot::SO3)
+"""
 Base.:inv(rot::SO3) = SO3(-rot.u, rot.w, rot.R')
+"""
+    inv(rot::SE3)
+"""
 Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t),inv(X.rot))  # test: to_matrix(X*inv(X))  ≈ I(4)
 
 """

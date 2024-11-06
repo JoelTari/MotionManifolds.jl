@@ -6,7 +6,7 @@ DocTestSetup = :(using MotionManifolds, StaticArrays)
 
 # Overview
 
-Documentation for MotionManifolds.jl, a small library to manipulate matrix Lie grousp
+Documentation for MotionManifolds.jl, a small library to manipulate matrix Lie groups
 frequently encountered in robotics.
 
 A working minimal example:
