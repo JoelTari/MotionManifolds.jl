@@ -34,8 +34,18 @@ their respective Lie algebra are denoted with lower case letters.
 Special Orthogonal 2:
 ```@docs
 SO2
-so2
+SO2()
+SO2(th::Number)
+SO2(co,si)
+SO2(R::SMatrix{2,2,Float64,4})
 ```
+
+```@docs
+so2
+so2(w::Number=0)
+```
+
+so2
 Special Euclidian 2
 ```@docs
 SE2

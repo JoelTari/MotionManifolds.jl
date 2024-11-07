@@ -96,45 +96,102 @@ end
 #--------------------------------------------------------------------#
 #                                SO3                                 #
 #--------------------------------------------------------------------#
+# Possible constructors: SO3(); SO3(u,w,R); SO3(R); SO3(u,w); SO3(uw)
 """
-    struct SO3
-      u::SVector{3,Float64}
-      w::Float64
-      R::SMatrix{3,3,Float64,9}
-    end
+    SO3
 
-Possible constructors: SO3(R); SO3(u,w); SO3(uw)
+Special Orthogonal group 3
+
+# Fields:
+* `u::SVector{3,Float64}`: normed vector (direction)
+* `w::Float64`: amplitude
+* `R::SMatrix{3,3,Float64,9}`: Orthogonal Matrix.  ``det(R)=1``
 """
 struct SO3
   u::SVector{3,Float64}
   w::Float64
   R::SMatrix{3,3,Float64,9}
+
+  @doc """
+      SO3()
+  """
+  function SO3()
+    new(SVector{3,Float64}([1,0,0]),0,SMatrix{3,3,Float64,9}([1 0 0;0 1 0;0 0 1]))
+  end
+  #
+  @doc """
+      SO3(u,w,R)
+  """
+  function SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
+    new(u,w,R)
+  end
+  #
+  @doc """
+      SO3(R)
+  """
+  function SO3(R::SMatrix{3,3,Float64,9})
+    Rskew=R-R'
+    @assert is_skew(Rskew)
+    w=acos((R[1,1]+R[2,2]+R[3,3]-1)/2)
+    if w > eps(Float64)
+      uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+      return new(uw/w,w,R)
+    else
+      uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+      return new(uw,w,R)
+    end
+  end
+  #
+  @doc """
+      SO3(u,w)
+  """
+  function SO3(u::SVector{3,Float64},w::Float64)
+    R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
+    new(u,w,R)
+  end
+  #
+  @doc """
+      SO3(uw)
+  """
+  function SO3(uw::SVector{3,Float64})
+    w=sqrt(wu'wu)
+    if w > eps(Float64)
+      u=wu/sqrt(wu'wu)
+    else
+      u=wu
+    end
+    R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
+    new(u,w,R)
+  end
 end
 
 
-    # so3    { u::SVector{3,Float64} , w::Float64 }
-
 """
-    struct so3
-      u::SVector{3,Float64}
-      w::Float64
-    end
+    so3
 
-``\\mathfrak{so}(3)``
+``\\mathfrak{so}(3)``, the Lie algebra of the special orthogonal group 3 (SO3). Also known as rotational twist.
+
+# Fields:
+* `u::SVector{3,Float64}`: normed vector (direction)
+* `w::Float64`: amplitude
 """
 struct so3
   u::SVector{3,Float64}
   w::Float64
-end
 
-"""
-    so3(uw::SVector{3,Float64})
-
-Constructor for ``\\mathfrak{so}(3)``
-"""
-function so3(uw::SVector{3,Float64})
-  w=sqrt(uw'uw)
-  w > eps(Float64) ? so3(uw/w,w) : so3(uw,w)
+  @doc """
+      so3()
+  """
+  function so3()
+    new(SVector{3,Float64}([1,0,0]),0)
+  end
+  @doc """
+      so3(uw)
+  """
+  function so3(uw::SVector{3,Float64})
+    w=sqrt(uw'uw)
+    w > eps(Float64) ? so3(uw/w,w) : so3(uw,w)
+  end
 end
 
 """
@@ -177,23 +234,23 @@ function Log(X::SO3)
   vee(so3(X.u,X.w))
 end
 
-"""
-		SO3(R::SMatrix{3,3,Float64,9})
-
-Constructor for ``\\mathrm{SO}(3)``
-"""
-function SO3(R::SMatrix{3,3,Float64,9})
-  Rskew=R-R'
-  @assert is_skew(Rskew)
-  w=acos((R[1,1]+R[2,2]+R[3,3]-1)/2)
-  if w > eps(Float64)
-    uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-    return SO3(uw/w,w,R)
-  else
-    uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-    return SO3(uw,w,R)
-  end
-end
+# """
+# 		SO3(R::SMatrix{3,3,Float64,9})
+#
+# # Constructor for ``\\mathrm{SO}(3)``
+# # """
+# # function SO3(R::SMatrix{3,3,Float64,9})
+# #   Rskew=R-R'
+# #   @assert is_skew(Rskew)
+# #   w=acos((R[1,1]+R[2,2]+R[3,3]-1)/2)
+# #   if w > eps(Float64)
+# #     uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+# #     return SO3(uw/w,w,R)
+# #   else
+# #     uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+# #     return SO3(uw,w,R)
+# #   end
+# # end
 
 """
     Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})::SO3
@@ -201,13 +258,7 @@ end
 ``\\mathfrak{so}(3)^\\vee~\\to~\\mathrm{SO}(3)``  
 """
 function Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})
-  w=sqrt(wu'wu)
-  if w > eps(Float64)
-    u=wu/sqrt(wu'wu)
-  else
-    u=wu
-  end
-  Exp(u,w)
+  SO3(wu)
 end
 """
     Exp(u::SVector{3,Float64}, w::Float64)::SO3
@@ -215,17 +266,16 @@ end
 so3^\\vee -> SO3
 """
 function Exp(u::SVector{3,Float64}, w::Float64)
-  R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
-  SO3(u,w,R)
+  SO3(u,w)
 end
-"""
-		SO3(u::SVector{3,Float64}, w::Float64)
-"""
-SO3(u::SVector{3,Float64}, w::Float64) = Exp(u,w)
-"""
-		SO3(uw::SVector{3,Float64})
-"""
-SO3(uw::SVector{3,Float64}) = Exp(uw, so3)
+# """
+# 		SO3(u::SVector{3,Float64}, w::Float64)
+# """
+# SO3(u::SVector{3,Float64}, w::Float64) = Exp(u,w)
+# """
+# 		SO3(uw::SVector{3,Float64})
+# """
+# SO3(uw::SVector{3,Float64}) = Exp(uw, so3)
 
 """
 		Adjm(Xr::SO3)
@@ -277,26 +327,59 @@ Jlinv(xr::so3)=Jrinv(xr)'
 #                                SE3                                 #
 #--------------------------------------------------------------------#
 """
-    SE3 {  t::SVector{3,Float64}, rot::SO3  }
+    SE3
 
-Possible constructors: SE3(t, rot), 
+Special Euclidean Group 3.
+
+# Fields:
+* `t::SVector{3,Float64}`: translation vector
+* `rot::SO3`: rotation (Special Orthogonal 3)
 """
 struct SE3
   t::SVector{3,Float64}
   rot::SO3
+
+  @doc """
+     SE3()
+  """
+  function SE3()
+    new(SA_F64[0,0,0],SO3())
+  end
+  @doc """
+     SE3(t,rot)
+  """
+  function SE3(t::SVector{3,Float64}, rot::SO3)
+    SE3(t,rot)
+  end
 end
 
 """
-    se3 { v::SVector{3,Float64}, w::so3 }
+    se3
 
-Possible constructors: se3(v,uw::SVector3), se3(v, uw::so3), se3(v, u, w) 
+``\\mathfrak{se}(3)``, Lie algebra of the Special Euclidean Group 3.  Also known as twist.
+
+# Fields
+* `v::SVector{3,Float64}`: translational twist.
+* `w::so3`: rotational twist.
 """
 struct se3
   v::SVector{3,Float64}
   w::so3
+  @doc """
+      se3(v,uw)
+  """
+  function se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) 
+    new(v, so3(uw))
+  end
+  @doc """
+      se3(v,u,w)
+  """
+  function se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
+    new(v, so3(u,w))
+  end
 end
-se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) = se3(v, so3(uw))
-se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64) = se3(v, so3(u,w))
+# se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) = se3(v, so3(uw))
+# se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64) = se3(v, so3(u,w))
 
 """
 		vee(x::se3)
@@ -421,49 +504,63 @@ Jrinv(vw::se3)=Jlinv(hat(-vee(vw)))
 #--------------------------------------------------------------------#
 """
 		SO2
+
+# Fields
+* `th::Float64`: angle (not necessarily inside ``[-\\pi,\\pi]``)
+* `c::Float64`:  cos
+* `s::Float64`:  sin
 """
 struct SO2
     th::Float64 # not necessarily inside [-pi,pi]
     c::Float64 # cos
     s::Float64 # sin
+
+    @doc """
+        SO2()
+    """
+    function SO2()
+      new(0,1,0)
+    end
+    @doc """
+        SO2(th::Number)
+    """
+    function SO2(th::Number)
+      sth = sin(th)
+      cth = cos(th)
+      new(th, cth, sth)
+    end
+    @doc """
+        SO2(co,si)
+    """
+    function SO2(co,si)
+      new(atan(si, co), co, si)
+    end
+    @doc """
+        SO2(R::SMatrix{2,2,Float64,4})
+    """
+    function SO2(R::SMatrix{2,2,Float64,4})
+      new(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
+    end
 end
-# generic boilerplate stuff,
-# but you get lectured with logs
-SO2(th) = begin
-    # @info "less efficient default method, non float64 scalar input"
-    sth = sin(th)
-    cth = cos(th)
-    SO2(th, cth, sth)
+
+"""
+    so2
+
+# Fields:
+* `w::Float64`: rotational twist
+"""
+struct so2
+    w::Float64
+
+    @doc """
+        so2(w::Number=0)
+    """
+    function so2(w::Number=0)
+      new(w)
+    end
 end
-SO2(co, si) = begin
-    # @info "less effficient default method for si,co ctor"
-    SO2(atan(si, co), co, si)
-end
-# prefer methods
-SO2(th::Float64) = begin
-    sth = sin(th)
-    cth = cos(th)
-    SO2(th, cth, sth)
-end
-SO2(cosinus::Float64, sinus::Float64) = SO2(atan(sinus, cosinus), cosinus, sinus)
-SO2(R::SMatrix{2,2,Float64,4}) = SO2(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
-# SO2FromMat(R::Matrix{Float64}) = begin
-#     if size(R) != (2, 2)
-#         throw(DimensionMismatch)
-#     else
-#         # @info "SO2 ctor: dynamic matrix input"
-#         SO2(atan(R[2, 1], R[1, 1]))
-#     end
-# end
-# SO2FromMat(R::Matrix) = begin
-#     # @info "less efficient default method for R matrix"
-#     if size(R) != (2, 2)
-#         throw(DimensionMismatch)
-#     else
-#         # @info "SO2 ctor: dynamic matrix input"
-#         SO2(atan(R[2, 1], R[1, 1]))
-#     end
-# end
+
+# TODO: CONTINUE HERE for docs
 
 """
     SE2 { t::SVector{2,Float64}, rot::SO2 }
@@ -499,12 +596,6 @@ SE2(X::Matrix) = begin
     SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
 end
 
-"""
-    so2 { w::Float64 }
-"""
-struct so2
-    w::Float64
-end
 
 """
     se2 {  vx::Float64, vy::Float64, w::Float64  }
@@ -586,7 +677,7 @@ vee(sk::se2) = SA_F64[sk.vx, sk.vy, sk.w]
 """
 		hat(w::Float64) -> so2
 """
-hat(w::Float64) = so2(w)
+hat(w::Number) = so2(w)
 """
 		hat(tau::SVector{3,Float64})::se2
 """
