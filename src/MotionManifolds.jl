@@ -120,19 +120,20 @@ struct SO3
   end
   #
   @doc """
-      SO3(u,w,R)
+      SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
   """
   function SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
     new(u,w,R)
   end
   #
   @doc """
-      SO3(R)
+      SO3(R::SMatrix{3,3,Float64,9})
   """
   function SO3(R::SMatrix{3,3,Float64,9})
     Rskew=R-R'
     @assert is_skew(Rskew)
-    w=acos((R[1,1]+R[2,2]+R[3,3]-1)/2)
+    trace=R[1,1]+R[2,2]+R[3,3]
+    w=trace > 3 && isapprox(trace,3) ? 0 : acos((trace-1)/2) # acos can throw domain error otherwise when the trace is numerically very slightly superior to 3
     if w > eps(Float64)
       uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
       return new(uw/w,w,R)
@@ -143,7 +144,7 @@ struct SO3
   end
   #
   @doc """
-      SO3(u,w)
+      SO3(u::SVector{3,Float64},w::Float64)
   """
   function SO3(u::SVector{3,Float64},w::Float64)
     R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
@@ -151,9 +152,9 @@ struct SO3
   end
   #
   @doc """
-      SO3(uw)
+      SO3(wu::SVector{3,Float64})
   """
-  function SO3(uw::SVector{3,Float64})
+  function SO3(wu::SVector{3,Float64})
     w=sqrt(wu'wu)
     if w > eps(Float64)
       u=wu/sqrt(wu'wu)
@@ -186,7 +187,7 @@ struct so3
     new(SVector{3,Float64}([1,0,0]),0)
   end
   @doc """
-      so3(uw)
+      so3(uw::SVector{3,Float64})
   """
   function so3(uw::SVector{3,Float64})
     w=sqrt(uw'uw)
@@ -346,10 +347,10 @@ struct SE3
     new(SA_F64[0,0,0],SO3())
   end
   @doc """
-     SE3(t,rot)
+     SE3(t::SVector{3,Float64}, rot::SO3)
   """
   function SE3(t::SVector{3,Float64}, rot::SO3)
-    SE3(t,rot)
+    new(t,rot)
   end
 end
 
@@ -366,13 +367,13 @@ struct se3
   v::SVector{3,Float64}
   w::so3
   @doc """
-      se3(v,uw)
+      se3(v::SVector{3,Float64}, uw::SVector{3,Float64})
   """
   function se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) 
     new(v, so3(uw))
   end
   @doc """
-      se3(v,u,w)
+      se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
   """
   function se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
     new(v, so3(u,w))
@@ -563,63 +564,121 @@ end
 # TODO: CONTINUE HERE for docs
 
 """
-    SE2 { t::SVector{2,Float64}, rot::SO2 }
+    SE2 
 
-Possible constructors: SE2(x,y,th), SE2(t, rot), SE2(t, th), SE2(X::SMatrix)
+SE2, Special Euclidean group 2
+
+# Fields:
+* `t::SVector{2,Float64}`: 2D translation
+* `rot::SO2`: rotation
 """
 struct SE2
     t::SVector{2,Float64}
     rot::SO2
-end
-SE2(x, y, th) = begin
-    # @info "less efficient default method from SE2 (requires conversions)"
-    SE2(convert(Float64, x), convert(Float64, y), convert(Float64, th))
-end
-SE2(x::Float64, y::Float64, th::Float64) = SE2(SA_F64[x, y], SO2(th))
-SE2(t::Vector{Float64}, rot::SO2) = begin
-    if length(t) != 2
-        throw(DimensionMismatch)
-    else
-        # @info "SE2 ctor: dynamic vector input"
-        SE2(SA_F64[t[1], t[2]], rot)
+
+    @doc """
+        SE2(x::Number, y::Number, th::Number)
+    """
+    function SE2(x::Number, y::Number, th::Number) 
+      new(SA_F64[x, y], SO2(th))
+    end
+    @doc """
+        SE2()
+    """
+    function SE2() 
+      new(SA_F64[0, 0], SO2())
+    end
+    @doc """
+        SE2(t::Vector{Float64}, rot::SO2)
+    """
+    function SE2(t::Vector{Float64}, rot::SO2)
+        if length(t) != 2
+            throw(DimensionMismatch)
+        else
+            # @info "SE2 ctor: dynamic vector input"
+            new(SA_F64[t[1], t[2]], rot)
+        end
+    end
+    @doc """
+        SE2(X::SMatrix{3,3,Float64})
+    """
+    function SE2(X::SMatrix{3,3,Float64})  
+      new(X[1:2, 3], SO2(X[1:2, 1:2]))
     end
 end
-SE2(t::Vector, th) = begin
-    @assert(length(t) == 2)
-    # @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
-    SE2(convert(Vector{Float64}, t), SO2(th))
-end
-SE2(t::Vector{Float64}, th::Float64) = SE2(t, SO2(th))
-SE2(X::SMatrix{3,3,Float64}) = SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
-SE2(X::Matrix) = begin
-    @assert(size(X) == (3, 3))
-    SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
-end
+# SE2(x, y, th) = begin
+#     # @info "less efficient default method from SE2 (requires conversions)"
+#     SE2(convert(Float64, x), convert(Float64, y), convert(Float64, th))
+# end
+# SE2(x::Float64, y::Float64, th::Float64) = SE2(SA_F64[x, y], SO2(th))
+# SE2(t::Vector{Float64}, rot::SO2) = begin
+#     if length(t) != 2
+#         throw(DimensionMismatch)
+#     else
+#         # @info "SE2 ctor: dynamic vector input"
+#         SE2(SA_F64[t[1], t[2]], rot)
+#     end
+# end
+# SE2(t::Vector, th) = begin
+#     @assert(length(t) == 2)
+#     # @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
+#     SE2(convert(Vector{Float64}, t), SO2(th))
+# end
+# SE2(t::Vector{Float64}, th::Float64) = SE2(t, SO2(th))
+# SE2(X::SMatrix{3,3,Float64}) = SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
+# SE2(X::Matrix) = begin
+#     @assert(size(X) == (3, 3))
+#     SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
+# end
 
 
 """
-    se2 {  vx::Float64, vy::Float64, w::Float64  }
+    se2
+
+se2, Lie algebra of the Special Euclidean group 2. Also known as the `screw`.
+
+# Fields
+* `vx::Float64`
+* `vy::Float64`
+* `w::Float64`
 """
 struct se2
-    # a.k.a. screw (se3 would be the twist)
     vx::Float64
     vy::Float64
     w::Float64
-end
-se2(tau::SVector{3,Float64}) = se2(tau...)
-se2(tau::Vector{Float64}) = begin
-    if length(tau) != 3
-        throw(DimensionMismatch)
-    else
-        # @info "se2 ctor: dynamic vector input"
-        se2(tau...)
+
+    @doc """
+        se2(tau::SVector{3,Float64})
+    """
+    function se2(tau::SVector{3,Float64})
+      new(tau...)
+    end
+    @doc """
+        se2()
+    """
+    function se2()
+      new(0,0,0)
+    end
+    @doc """
+        se2(vx,vy,w)
+    """
+    function se2(vx,vy,w)
+      new(vx,vy,w)
     end
 end
-se2(tau) = begin
-    @assert length(tau) == 3
-    # @info "less efficient default method from se2 (requires conversion to vector{Float64})"
-    se2(convert(Vector{Float64}, tau))
-end
+# se2(tau::Vector{Float64}) = begin
+#     if length(tau) != 3
+#         throw(DimensionMismatch)
+#     else
+#         # @info "se2 ctor: dynamic vector input"
+#         se2(tau...)
+#     end
+# end
+# se2(tau) = begin
+#     @assert length(tau) == 3
+#     # @info "less efficient default method from se2 (requires conversion to vector{Float64})"
+#     se2(convert(Vector{Float64}, tau))
+# end
 
 """
     ecpi
@@ -746,14 +805,32 @@ Base.:inv(rot::SO2) = SO2(-rot.th, rot.c, -rot.s)
     inv(X::SE2)
 """
 Base.:inv(X::SE2) = SE2(-(inv(X.rot) * X.t), inv(X.rot))
+
+# # Example
+# ```jldoctest
+# julia> X=SE2(randn(2) |> SVector{2,Float64}, SO2(randn())); to_matrix(X*inv(X)) ≈ [1 0 0;0 1 0;0 0 1]
+# true
 """
     inv(rot::SO3)
+
+# Example
+```jldoctest
+julia> XR=SO3(randn(3) |> SVector{3,Float64}); to_matrix(XR*inv(XR)) ≈ [1 0 0;0 1 0;0 0 1]
+true
+```
 """
 Base.:inv(rot::SO3) = SO3(-rot.u, rot.w, rot.R')
 """
-    inv(rot::SE3)
+    inv(X::SE3)
+
+# Example
+```jldoctest
+julia> X=SE3(randn(3) |> SVector{3,Float64}, SO3(randn(3) |> SVector{3,Float64})); to_matrix(X*inv(X)) ≈ [1 0 0 0;0 1 0 0;0 0 1 0;0 0 0 1]
+true
+```
 """
 Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t),inv(X.rot))  # test: to_matrix(X*inv(X))  ≈ I(4)
+
 
 """
     Adjm(rot::SO2)

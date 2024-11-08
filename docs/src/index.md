@@ -29,9 +29,8 @@ Contents:
 The convention is that Lie groups are denoted with upper case letters, while 
 their respective Lie algebra are denoted with lower case letters.
 
-### 
+### Special Orthogonal 2 group, a.k.a. SO2
 
-Special Orthogonal 2:
 ```@docs
 SO2
 SO2()
@@ -44,26 +43,53 @@ SO2(R::SMatrix{2,2,Float64,4})
 so2
 so2(w::Number=0)
 ```
+### Special Euclidean 2 group, a.k.a. SE2
 
-so2
-Special Euclidian 2
 ```@docs
 SE2
-se2
+SE2()
+SE2(t::Vector{Float64}, rot::SO2)
+SE2(x::Number, y::Number, th::Number)
+SE2(X::SMatrix{3,3,Float64})
 ```
-### Special Orthogonal 3
 
-Special Orthogonal 3:
+```@docs
+se2
+se2(vx,vy,w)
+se2()
+se2(tau::SVector{3,Float64})
+```
+### Special Orthogonal 3 group, a.k.a. SO3
+
 ```@docs
 SO3
+SO3()
+SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
+SO3(R::SMatrix{3,3,Float64,9})
+SO3(u::SVector{3,Float64},w::Float64)
+SO3(uw::SVector{3,Float64})
+```
+
+```@docs
 so3
+so3()
 so3(uw::SVector{3,Float64})
 ```
-Special Euclidian 3
+
+### Special Euclidean 3 group, a.k.a. SE3
+
 ```@docs
 SE3
-se3
+SE3()
+SE3(t::SVector{3,Float64}, rot::SO3)
 ```
+
+```@docs
+se3
+se3(v::SVector{3,Float64}, uw::SVector{3,Float64})
+se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
+```
+
 
 ## Manifold manipulations
 
