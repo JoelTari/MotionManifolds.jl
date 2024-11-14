@@ -537,6 +537,12 @@ struct SO2
       new(atan(si, co), co, si)
     end
     @doc """
+        SO2(th,co,si)
+    """
+    function SO2(th::Real,co::Real,si::Real)
+      new(th, co, si)
+    end
+    @doc """
         SO2(R::SMatrix{2,2,Float64,4})
     """
     function SO2(R::SMatrix{2,2,Float64,4})
@@ -598,6 +604,12 @@ struct SE2
             # @info "SE2 ctor: dynamic vector input"
             new(SA_F64[t[1], t[2]], rot)
         end
+    end
+    @doc """
+        SE2(t::SVector{2,Float64}, rot::SO2)
+    """
+    function SE2(t::SVector{2,Float64}, rot::SO2)
+        new(t, rot)
     end
     @doc """
         SE2(X::SMatrix{3,3,Float64})
