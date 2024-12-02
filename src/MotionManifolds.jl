@@ -41,7 +41,8 @@ export SO2,
     Jlinv,
     ExpAndJr,
     skew,
-    is_skew
+    is_skew,
+    MatrixDim
 
 # export SO2FromMat
 
@@ -191,7 +192,13 @@ struct so3
   """
   function so3(uw::SVector{3,Float64})
     w=sqrt(uw'uw)
-    w > eps(Float64) ? so3(uw/w,w) : so3(uw,w)
+    w > eps(Float64) ? new(uw/w,w) : new(uw,w)
+  end
+  @doc """
+      so3(u::SVector{3,Float64}, w::Float64)
+  """
+  function so3(u::SVector{3,Float64}, w::Float64)
+    new(u,w)
   end
 end
 
@@ -232,7 +239,7 @@ to_matrix(Xr::SO3) = Xr.R
 		Log(X::SO3) -> SVector3
 """
 function Log(X::SO3)
-  vee(so3(X.u,X.w))
+  vee(so3(X.u*X.w))
 end
 
 # """
@@ -341,17 +348,21 @@ struct SE3
   rot::SO3
 
   @doc """
-     SE3()
+      SE3()
   """
   function SE3()
     new(SA_F64[0,0,0],SO3())
   end
   @doc """
-     SE3(t::SVector{3,Float64}, rot::SO3)
+      SE3(t::SVector{3,Float64}, rot::SO3)
   """
   function SE3(t::SVector{3,Float64}, rot::SO3)
     new(t,rot)
   end
+end
+
+function MatrixDim(::Type{SE3})
+  6 # n(n+1)/2 with n=3
 end
 
 """
@@ -392,6 +403,13 @@ vee(x::se3)=SVector{6,Float64}([x.v...,vee(x.w)...])
 hat(x::SVector{6,Float64})=se3(SA_F64[x[1:3]...],SA_F64[x[4:end]...])
 
 """
+		to_matrix(x::se3)
+"""
+function to_matrix(x::se3)
+  SMatrix{4,4,Float64,16}([to_matrix(x.w) x.v;0 0 0 0])
+end
+
+"""
 		to_matrix(X::SE3)
 """
 to_matrix(X::SE3)=SMatrix{4,4,Float64,16}([to_matrix(X.rot) X.t;0 0 0 1])
@@ -415,7 +433,9 @@ function internal_VTHSO3(LogX::SVector{3,Float64})
   Jl(uw, so3) # see remark eq (174), Solà 2018
 end
 
-"Log(X::SE3) -> SVector6" 
+"""
+    Log(X::SE3) -> SVector{6,Float64}" 
+"""
 function Log(X::SE3)
   w=Log(X.rot)
   Vinv=Jlinv(hat(w, so3)) # see remark eq (174), Solà 2018
@@ -643,6 +663,9 @@ end
 #     SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
 # end
 
+function MatrixDim(::Type{SE2})
+  3 # n(n+1)/2 with n=2
+end
 
 """
     se2
@@ -876,7 +899,7 @@ function exp_lie(sk::se2)
     w_sq = sk.w * sk.w
     # K1 is  sin(w)÷w
     # K2 is  (1-cos(w))÷w
-    if w_sq < eps(Float64) * 10e9 # WARN_EPS
+    if w_sq < eps(Float64) * 1e4 # WARN_EPS
         K1 = 1 - (1.0 / 6.0) * w_sq
         K2 = 0.5 * sk.w - (1.0 / 24.0) * sk.w * w_sq
     else
@@ -919,7 +942,7 @@ function ExpAndJr(tau::SVector{3,Float64})
     vx = tau[1]
     vy = tau[2]
     w = tau[3]
-    if w_sq < eps(Float64) * 10e9 # WARN_EPS
+    if w_sq < eps(Float64) * 1e4 # WARN_EPS
         J13 = -vy / 2.0 + w * vx / 6.0
         J23 = vx / 2.0 + w * vy / 6.0
     else
@@ -951,7 +974,7 @@ function log_lie(X::SE2)
     th_sq = th * th
     # K1 is  sin(w)÷w
     # K2 is  (1-cos(w))÷w
-    if th_sq < eps(Float64) * 10e9 # WARN_EPS
+    if th_sq < eps(Float64) * 1e4 # WARN_EPS
         K1 = 1 - (1.0 / 6) * th_sq
         K2 = 0.5 * th - (1.0 / 24.0) * th * th_sq
     else
@@ -983,7 +1006,7 @@ function Jrinv(sk::se2)
     w_sq = w * w
     J12 = -w / 2
     J21 = -J12
-    if (w_sq > eps(Float64) * 10e9) # WARN_EPS
+    if (w_sq > eps(Float64) * 1e4) # WARN_EPS
         J11 = -wsw / (2 * cw - 2)
         J22 = J11
         dd = 2 * w * (cw - 1)
@@ -1016,7 +1039,7 @@ function Jr(sk::se2)
     vy = sk.vy
     w = sk.w
     w_sq = w * w
-    if w_sq < eps(Float64) * 10e9 # WARN_EPS
+    if w_sq < eps(Float64) * 1e4 # WARN_EPS
         K1 = 1 - w_sq / 6
         K2 = 0.5 * sk.w - 1.0 / 24 * sk.w * w_sq
         J13 = -vy / 2.0 + w * vx / 6.0
@@ -1048,6 +1071,27 @@ Jl(sk::se2) = Jr(hat(-vee(sk)))
 Alias for hat.
 """
 wedge=hat
+
+
+# Numerical calculations for the Exp function
+# useful for tests
+function numExp(x,n=12)
+  # Exp(x) = I + x^ + (x^*x^)/2! + (x^*x^*x^)/3! + ... (do it n times)
+  xmat=to_matrix(hat(x))
+  N=[1/factorial(i) for i in 1:n]
+  Xs=Vector([xmat])
+  for i in 2:n
+    push!(Xs,Xs[end]*xmat)
+  end
+  result = zeros(size(xmat))
+  # I prefer not to add a dependency on LinearAlgebra
+  # so I will define the identity 'manually'
+  for i in 1:size(xmat,1)
+    result[i,i]=1
+  end
+  result+=N'*Xs
+  return result
+end
 
 # TODO: to_quat for SO3, to_S1 (unit circle) for SO2
 # TODO: approx check between several SE2 se2 SO2 so2

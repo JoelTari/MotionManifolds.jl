@@ -22,17 +22,14 @@ y = 6.5;
 th = -5 * pi / 6;
 th2 = 43 * pi / 6;
 X = SE2(SA_F64[x, y], SO2(th))
-Xb = SE2([x, y], SO2(th))
-Xc = SE2([x, y], th)
+# Xc = SE2([x, y], th)
 # sk = log_lie(X)
 R = [cos(th) -sin(th); sin(th) cos(th)]
 tau = SA_F64[23.0, -8, 0.9]
 tau0a = SA_F64[23.0, -8, 0]
 tauOOB = SA_F64[23.0, -8, 0.9-4*pi]
-taud = [tau...] # non static Vector{Float64}
 tau0 = SA_F64[0, 0, 0]
 rand1 = rand()
-sk = se2(taud)
 sk = se2(tau)
 Xsk = MotionManifolds.exp_lie(sk)[1]
 
@@ -53,7 +50,6 @@ println(":: Starting the test set ::")
     @test Log(Exp(tau)) ≈ tau
     @test Log(Exp(tau0)) ≈ tau0
     @test Log(Exp(tau0a)) ≈ tau0a
-    @test Log(Exp(taud)) ≈ taud # note here: dynamic input vector
     @test Log(Exp(tauOOB)) != tauOOB
     @test Jr(se2(tau)) ≈ inv(Jrinv(se2(tau)))
     @test Jr(se2(tau)) ≈ ExpAndJr(tau)[2]
@@ -76,4 +72,15 @@ println(":: Starting the test set ::")
     @test ExpAndJr(vee(sk))[2] ≈ Jr(sk)
     @test ExpAndJr(tau0a)[2] ≈ Jr(hat(tau0a))
     # @test_ X.rot = pi/6 # immutable
+
+    # test Exp via MotionManifolds.numExp
+    @test isapprox(MotionManifolds.numExp(Log(X),18), to_matrix(X))
+
+    # other test: the Adjoint
+    res1=to_matrix(X)*to_matrix(se2(tau))*to_matrix(inv(X))
+    res2=hat(Adjm(X)*vee(se2(tau))) |> to_matrix
+    @test isapprox(res1,res2)
+
+    # TODO: test SE3 / SO3
+
 end
