@@ -83,4 +83,38 @@ println(":: Starting the test set ::")
 
     # TODO: test SE3 / SO3
 
+
+end
+
+@testset "MotionManifolds operators" begin
+    # test + * dot operators
+    th1,th2=rand(2)
+    @test SO2(th1)*SO2(th2) == SO2(th1)+SO2(th2)
+    X1,X2=[SE2(5*randn(2)...,th1),SE2(2*randn(2)...,th2)]
+    @test X1+X2 == X1*X2
+    Xr1, Xr2 = SO3(SA_F64[3*randn(3)...]),SO3(SA_F64[randn(3)...])
+    @test Xr1+Xr2 == Xr1*Xr2
+    @test Xr1+Xr2 != Xr2+Xr1 # no commutativity
+    Y1,Y2 = SE3(SA_F64[5*randn(3)...],Xr1), SE3(SA_F64[randn(3)...],Xr2)
+    @test Y1+Y2 == Y1*Y2
+    @test Y1+Y2 != Y2+Y1
+    # minus SO2
+    matth1minusth2 = to_matrix(SO2(th1)-SO2(th2))
+    matth1minusth2_ = to_matrix(th1|>SO2)*to_matrix(inv(th2|>SO2))
+    @test isapprox(matth1minusth2,matth1minusth2_)
+    # minus SE2
+    matX1minusX2 = to_matrix(X1-X2)
+    matX1minusX2_ = to_matrix(X1)*to_matrix(inv(X2))
+    @test isapprox(matX1minusX2,matX1minusX2_)
+    @test X1-X2 != X2-X1
+    # minus SO3
+    matXr1minusXr2 = to_matrix(Xr1-Xr2)
+    matXr1minusXr2_ = to_matrix(Xr1)*to_matrix(inv(Xr2))
+    @test isapprox(matXr1minusXr2,matXr1minusXr2_)
+    @test Xr1-Xr2 != Xr2-Xr1
+    # minus SE3
+    matY1minusY2 = to_matrix(Y1-Y2)
+    matY1minusY2_ = to_matrix(Y1)*to_matrix(inv(Y2))
+    @test isapprox(matY1minusY2,matY1minusY2_)
+    @test Y1-Y2 != Y2-Y1
 end

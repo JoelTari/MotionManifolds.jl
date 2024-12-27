@@ -43,6 +43,7 @@ export SO2,
     skew,
     is_skew,
     MatrixDim
+    # dot
 
 # export SO2FromMat
 
@@ -781,13 +782,23 @@ hat(tau::Vector{Float64}) = begin
     se2(tau...)
 end
 
-import Base: *
+import Base: *,+
+"""
+    +(rot1::SO2, rot2::SO2)
+"""
+function Base.:+(rot1::SO2, rot2::SO2)
+    SO2(rot1.th + rot2.th)
+end
 """
     *(rot1::SO2, rot2::SO2)
 """
-function Base.:*(rot1::SO2, rot2::SO2)
-    SO2(rot1.th + rot2.th)
-end
+Base.:*(rot1::SO2, rot2::SO2) = rot1+rot2
+# """ TODO:
+#     dot(rot::SO2, t::SVector{2,Float64})
+# """
+# function dot(rot::SO2, t::SVector{2,Float64}) # action SO2*point
+#     to_matrix(rot) * t
+# end
 """
     *(rot::SO2, t::SVector{2,Float64})
 """
@@ -801,23 +812,35 @@ function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
     pose.t + pose.rot * t
 end
 """
+    +(X1::SE2, X2::SE2)
+"""
+function Base.:+(X1::SE2, X2::SE2)
+    SE2(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
+end
+"""
     *(X1::SE2, X2::SE2)
 """
-function Base.:*(X1::SE2, X2::SE2)
-    SE2(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
+Base.:*(X1::SE2, X2::SE2)=X1+X2
+"""
+    +(Xr1::SO3,Xr2::SO3)
+"""
+function Base.:+(Xr1::SO3,Xr2::SO3)
+  SO3(Xr1.R*Xr2.R)
 end
 """
     *(Xr1::SO3,Xr2::SO3)
 """
-function Base.:*(Xr1::SO3,Xr2::SO3)
-  SO3(Xr1.R*Xr2.R)
+Base.:*(Xr1::SO3,Xr2::SO3) = Xr1+Xr2
+"""
+    +(X1::SE3, X2::SE3)
+"""
+function Base.:+(X1::SE3, X2::SE3)
+    SE3(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
 end
 """
     *(X1::SE3, X2::SE3)
 """
-function Base.:*(X1::SE3, X2::SE3)
-    SE3(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
-end
+Base.:*(X1::SE3, X2::SE3) = X1+X2
 """
     *(rot::SO3, t::SVector{3,Float64})
 """
@@ -825,7 +848,7 @@ function Base.:*(rot::SO3, t::SVector{3,Float64}) # action SO3*point
     rot.R * t
 end
 """
-    *(rot1::SO2, rot2::SO2)
+    *(pose::SE3, t::SVector{3,Float64})
 """
 function Base.:*(pose::SE3, t::SVector{3,Float64}) # action SE3*point
     pose.t + pose.rot * t
@@ -866,6 +889,15 @@ true
 """
 Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t),inv(X.rot))  # test: to_matrix(X*inv(X))  ≈ I(4)
 
+import Base: -
+Base.:-(R::SO2) = inv(R)
+Base.:-(X::SE2) = inv(X)
+Base.:-(Xr::SO3) = inv(Xr)
+Base.:-(Y::SE3) = inv(Y)
+Base.:-(R1::SO2,R2::SO2) = R1*inv(R2)
+Base.:-(X1::SE2,X2::SE2) = X1*inv(X2)
+Base.:-(Xr1::SO3,Xr2::SO3) = Xr1*inv(Xr2)
+Base.:-(Y1::SE3,Y2::SE3) = Y1*inv(Y2)
 
 """
     Adjm(rot::SO2)
