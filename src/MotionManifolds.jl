@@ -390,6 +390,12 @@ struct se3
   function se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
     new(v, so3(u,w))
   end
+  @doc """
+      se3()
+  """
+  function se3()
+    new(SA_F64[0,0,0],so3())
+  end
 end
 # se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) = se3(v, so3(uw))
 # se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64) = se3(v, so3(u,w))
