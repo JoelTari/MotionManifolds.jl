@@ -42,8 +42,10 @@ export SO2,
     ExpAndJr,
     skew,
     is_skew,
-    MatrixDim
-    # dot
+    Quaternion,
+    to_quat,
+    safe_quaternion
+
 
 # export SO2FromMat
 
@@ -92,6 +94,44 @@ Check if a matrix is skewed.
 """
 function is_skew(M)
   M'==-M
+end
+
+"""
+    Quaternion
+
+An infamous alternative representation of SO3 object.
+q0 + q1*i + q2*j + q3*k
+
+# Fields:
+* `q0::Float64`:  q0 + q1*i + q2*j + q3*k
+* `q1::Float64`:  q0 + q1*i + q2*j + q3*k 
+* `q2::Float64`:  q0 + q1*i + q2*j + q3*k
+* `q3::Float64`:  q0 + q1*i + q2*j + q3*k
+"""
+struct Quaternion
+  q0::Float64
+  q1::Float64
+  q2::Float64
+  q3::Float64
+
+  @doc """
+      Quaternion()
+
+  Quaternion object with 0 valued coefficients
+  """
+  function Quaternion()
+    new(0,0,0,0)
+  end
+  #
+  @doc """
+      Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
+
+  Q = q0 + q1*i + q2*j + q3*k
+  WARNING: this constructor does not check validity.  Prefer using the safe_quaternion() function in this situation.
+  """
+  function Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
+    new(q0,q1,q2,q3)
+  end
 end
 
 
@@ -166,6 +206,15 @@ struct SO3
     R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
     new(u,w,R)
   end
+  #
+  @doc """
+      SO3(q::Quaternion)
+  """
+  function SO3(q::Quaternion)
+    # compute the log
+    xw=so3(q)
+    Exp(vee(xw), SO3)
+  end
 end
 
 
@@ -199,6 +248,18 @@ struct so3
       so3(u::SVector{3,Float64}, w::Float64)
   """
   function so3(u::SVector{3,Float64}, w::Float64)
+    new(u,w)
+  end
+  @doc """
+      so3(q::Quaternion)
+  """
+  function so3(q::Quaternion)
+    q0=q.q0
+    v=SA_F64[q.q1,q.q2,q.q3]
+    normv=sqrt(v'v)
+    uw=2*atan(normv,q0)/normv*v
+    w=sqrt(uw'uw)
+    u=uw/w
     new(u,w)
   end
 end
@@ -360,10 +421,6 @@ struct SE3
   function SE3(t::SVector{3,Float64}, rot::SO3)
     new(t,rot)
   end
-end
-
-function MatrixDim(::Type{SE3})
-  6 # n(n+1)/2 with n=3
 end
 
 """
@@ -670,9 +727,15 @@ end
 #     SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
 # end
 
-function MatrixDim(::Type{SE2})
-  3 # n(n+1)/2 with n=2
-end
+# """
+#     MatrixDim(::Type{SE2})
+#
+#
+# Returns 3, the number of matrix row (or column) in the Lie algebra of SE2
+# """
+# function MatrixDim(::Type{SE2})
+#   3 # n(n+1)/2 with n=2
+# end
 
 """
     se2
@@ -1131,7 +1194,63 @@ function numExp(x,n=12)
   return result
 end
 
-# TODO: to_quat for SO3, to_S1 (unit circle) for SO2
+# TODO:  isapprox(Q1, Q2)
+
+"""
+    to_matrix(q::Quaternion)
+
+Rotation matrix associated with this quaternion.
+Note: not the skew symmetric matrix of the corresponding Lie algebra.
+"""
+function to_matrix(q::Quaternion)
+  to_matrix(SO3(q))
+end
+
+"""
+    to_quat(xw::so3)
+"""
+function to_quat(xw::so3)
+  Quaternion(cos(xw.w/2), sin(xw.w/2)*xw.u... )
+end
+
+"""
+    to_quat(W::SO3)
+"""
+function to_quat(W::SO3)
+  xw=Log(W)
+  to_quat(hat(xw, so3))
+end
+
+"""
+    safe_quaternion(q0::Real, q1::Real, q2::Real, q3::Real)
+
+Quaternion constructor, but with validity check.
+"""
+function safe_quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
+  sum_squares = q0*q0 + q1*q1 + q2*q2 + q3*q3
+  if isapprox(sum_squares, 1)
+    Quaternion(q0,q1,q2,q3)
+  else
+    throw(AssertionError("Sum of squares coefficient of a quaternion should be 1"))
+  end
+end
+
+# TODO: to_S1 (unit circle) for SO2
 # TODO: approx check between several SE2 se2 SO2 so2
+
+
+
+# # Tests for quaternions:
+# #
+# xw=so3([0.7937450088478044, 0.5582832527134615, 0.24143046756545883], 1.0282915415168719)
+# W=Exp(vee(xw),SO3)
+# # text 1 : check that q == q_bis (approx)
+# q=to_quat(xw)
+# q_bis=to_quat(W)
+# # text 2 : check those 4 matrices are the same (approx)
+# to_matrix(q)
+# to_matrix(W)
+# to_matrix(SO3(q))
+# to_matrix(Exp(so3(q) |> vee, SO3))
 
 end
