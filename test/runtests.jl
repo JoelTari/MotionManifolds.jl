@@ -118,3 +118,16 @@ end
     @test isapprox(matY1minusY2,matY1minusY2_)
     @test Y1-Y2 != Y2-Y1
 end
+
+@testset "Transformation to/from Quaternions" begin
+  # Tests for quaternions:
+  #
+  xw=so3(SA_F64[0.7937450088478044, 0.5582832527134615, 0.24143046756545883], 1.0282915415168719)
+  W=Exp(vee(xw),SO3)
+  # text 1 : check that q == q_bis (approx)
+  q=to_quat(xw)
+  q_bis=to_quat(W)
+  @test q ≈ q_bis
+  # text 2 : check those 4 matrices are the same (approx)
+  @test to_matrix(q) ≈ to_matrix(W) ≈ to_matrix(SO3(q)) ≈ to_matrix(Exp(so3(q) |> vee, SO3))
+end

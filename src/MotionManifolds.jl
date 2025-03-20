@@ -44,8 +44,8 @@ export SO2,
     is_skew,
     Quaternion,
     to_quat,
-    safe_quaternion
-
+    safe_quaternion,
+    isapprox
 
 # export SO2FromMat
 
@@ -1194,7 +1194,20 @@ function numExp(x,n=12)
   return result
 end
 
-# TODO:  isapprox(Q1, Q2)
+import Base: isapprox
+"""
+    Base.isapprox(Qa::Quaternion, Qb::Quaternion)
+
+# Arguments
+- `Qa::Quaternion`: 
+- `Qb::Quaternion`: 
+"""
+function Base.isapprox(Qa::Quaternion, Qb::Quaternion)
+  isapprox(Qa.q0, Qb.q0) && 
+  isapprox(Qa.q1, Qb.q1) && 
+  isapprox(Qa.q2, Qb.q2) && 
+  isapprox(Qa.q3, Qb.q3)
+end
 
 """
     to_matrix(q::Quaternion)
@@ -1239,18 +1252,5 @@ end
 # TODO: approx check between several SE2 se2 SO2 so2
 
 
-
-# # Tests for quaternions:
-# #
-# xw=so3([0.7937450088478044, 0.5582832527134615, 0.24143046756545883], 1.0282915415168719)
-# W=Exp(vee(xw),SO3)
-# # text 1 : check that q == q_bis (approx)
-# q=to_quat(xw)
-# q_bis=to_quat(W)
-# # text 2 : check those 4 matrices are the same (approx)
-# to_matrix(q)
-# to_matrix(W)
-# to_matrix(SO3(q))
-# to_matrix(Exp(so3(q) |> vee, SO3))
 
 end
