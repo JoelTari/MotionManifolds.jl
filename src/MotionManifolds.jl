@@ -257,7 +257,7 @@ struct so3
   @doc """
       so3(u::SVector{3,Float64}, w::Float64)
   """
-  function so3(u::SVector{3,Float64}, w::Float64)
+  function so3(u::SVector{3,Float64}, w::Real)
     new(u,w)
   end
   @doc """
