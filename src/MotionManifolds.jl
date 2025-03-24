@@ -431,6 +431,14 @@ struct SE3
   function SE3(t::SVector{3,Float64}, rot::SO3)
     new(t,rot)
   end
+  @doc """
+      SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
+
+  Warning: no checks on quaternion validity
+  """
+  function SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
+    new(SA_F64[x,y,z], SO3(Quaternion(q0,q1,q2,q3)))
+  end
 end
 
 """
