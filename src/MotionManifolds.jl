@@ -439,6 +439,14 @@ struct SE3
   function SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
     new(SA_F64[x,y,z], SO3(Quaternion(q0,q1,q2,q3)))
   end
+  @doc """
+      SE3(x::Real, y::Real, z::Real, Q::SVector{4,Float64} )
+
+  Warning: no checks on quaternion validity
+  """
+  function SE3(x::Real, y::Real, z::Real, Q::Vector{Float64} )
+    new(SA_F64[x,y,z], SO3(Quaternion(Q...)))
+  end
 end
 
 """
@@ -458,6 +466,12 @@ struct se3
   """
   function se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) 
     new(v, so3(uw))
+  end
+  @doc """
+      se3(vuw::SVector{6,Float64})
+  """
+  function se3(vuw::SVector{6,Float64}) 
+    new(SA_F64[vuw[1:3]...], so3(SA_F64[vuw[4:6]...]))
   end
   @doc """
       se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
