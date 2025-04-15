@@ -141,3 +141,19 @@ end
   # text 2 : check those 4 matrices are the same (approx)
   @test to_matrix(q) ≈ to_matrix(W) ≈ to_matrix(SO3(q)) ≈ to_matrix(Exp(so3(q) |> vee, SO3))
 end
+
+@testset "SO3 Matrix" begin
+  # test against a former bug (encountered in real life)
+  R= SA_F64[-0.999764194980216 0.0012702695881678077 -0.021678119169681133;
+           0.0012700454281182416 -0.9931583301449304 -0.11676865267859228;
+          -0.021678132303594052 -0.11676865024027544 0.9929225251251368]
+  @test isapprox( to_matrix(SO3(R)), R)
+  R=SA_F64[-1 0 0.0;0 -1 0;0 0 1]
+  @test isapprox( to_matrix(SO3(R)), R)
+  R=SA_F64[1.0 0 0;0 1 0;0 0 1]
+  @test isapprox( to_matrix(SO3(R)), R)
+  uw=SA_F64[0.611,0.532,0.962]
+  R=SO3(uw).R
+  Xr=SO3(R)
+  @test isapprox( Xr.u*Xr.w, uw)
+end

@@ -182,21 +182,23 @@ struct SO3
       SO3(R::SMatrix{3,3,Float64,9})
   """
   function SO3(R::SMatrix{3,3,Float64,9})
-    try
-      Rskew=R-R'
-      @assert is_skew(Rskew)
-      trace=R[1,1]+R[2,2]+R[3,3]
-      w=trace > 3 && isapprox(trace,3) ? 0 : acos((trace-1)/2) # acos can throw domain error otherwise when the trace is numerically very slightly superior to 3
-      if w > eps(Float64)
-        uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-        return new(uw/w,w,R)
-      else
-        uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-        return new(uw,w,R)
-      end
-    catch
-      throw("MotionManifolds throw (acos Domain ?): R matrix is  $R")
+    # try
+    Rskew=R-R'
+    @assert is_skew(Rskew)
+    trace=R[1,1]+R[2,2]+R[3,3]
+    # boring domain checks to avoid errors in edge cases with small numerical errors
+    dom=(trace-1)/2
+    w = abs(dom) > 1 ? isapprox(dom,1) ? acos(1) : acos(-1) : acos(dom)
+    if abs(w) > eps(Float64) && abs(w-pi) > eps(Float64) # OPTIMIZE:
+      uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+      return new(uw/w,w,R)
+    else
+      uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
+      return new(uw,w,R)
     end
+    # catch
+    #   throw("MotionManifolds throw (acos Domain ?): R matrix is  $R")
+    # end
   end
   #
   @doc """
