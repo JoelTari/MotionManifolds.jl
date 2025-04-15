@@ -182,7 +182,6 @@ struct SO3
       SO3(R::SMatrix{3,3,Float64,9})
   """
   function SO3(R::SMatrix{3,3,Float64,9})
-    # try
     Rskew=R-R'
     @assert is_skew(Rskew)
     trace=R[1,1]+R[2,2]+R[3,3]
@@ -196,9 +195,6 @@ struct SO3
       uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
       return new(uw,w,R)
     end
-    # catch
-    #   throw("MotionManifolds throw (acos Domain ?): R matrix is  $R")
-    # end
   end
   #
   @doc """
