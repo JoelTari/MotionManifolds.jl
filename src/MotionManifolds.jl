@@ -1011,12 +1011,17 @@ Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t),inv(X.rot))  # test: to_matrix(X*inv(X
 import Base: -
 Base.:-(R::SO2) = inv(R)
 Base.:-(X::SE2) = inv(X)
+Base.:-(xv::se2) = se2(-xv.vx,-xv.vy,-xv.w)
 Base.:-(Xr::SO3) = inv(Xr)
+Base.:-(xr::so3) = so3(-xr.u*xr.w)
 Base.:-(Y::SE3) = inv(Y)
+Base.:-(xv::se3) = se3(-xv.v, -xv.w)
 Base.:-(R1::SO2,R2::SO2) = R1*inv(R2)
 Base.:-(X1::SE2,X2::SE2) = X1*inv(X2)
+Base.:-(X::SE2,tau::se2) = X+Exp(-vee(tau))
 Base.:-(Xr1::SO3,Xr2::SO3) = Xr1*inv(Xr2)
 Base.:-(Y1::SE3,Y2::SE3) = Y1*inv(Y2)
+Base.:-(X::SE3,tau::se3) = X+Exp(-vee(tau))
 
 """
     Adjm(rot::SO2)
