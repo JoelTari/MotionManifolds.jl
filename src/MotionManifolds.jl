@@ -921,6 +921,14 @@ function Base.:+(X1::SE2, X2::SE2)
     SE2(X1.t + X1.rot * X2.t, X1.rot * X2.rot)
 end
 """
+    +(X::SE2, tau::se2)
+
+Right-plus:  X Exp(tau)
+"""
+function Base.:+(X::SE2, tau::se2)
+  X+Exp(vee(tau))
+end
+"""
     *(X1::SE2, X2::SE2)
 """
 Base.:*(X1::SE2, X2::SE2)=X1+X2
@@ -944,6 +952,14 @@ end
     *(X1::SE3, X2::SE3)
 """
 Base.:*(X1::SE3, X2::SE3) = X1+X2
+"""
+    +(X::SE3, tau::se3)
+
+Right-plus:  X Exp(tau)
+"""
+function Base.:+(X::SE3, tau::se3)
+  X+Exp(vee(tau))
+end
 """
     *(rot::SO3, t::SVector{3,Float64})
 """
