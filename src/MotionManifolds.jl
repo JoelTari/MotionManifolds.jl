@@ -532,10 +532,10 @@ end
 
 #  Exp, Log, exp_lie, log_lie, Jl, Jr, Jlinv, Jlinv, QJSE3 (QJSE3 is internal), VTHSO3 (internal)
 
-function internal_VTHSO3(LogX::SVector{3,Float64}) 
-  # so3 input
-  Jl(uw, so3) # see remark eq (174), Solà 2018
-end
+# function internal_VTHSO3(LogX::SVector{3,Float64}) 
+#   # so3 input
+#   Jl(uw, so3) # see remark eq (174), Solà 2018
+# end
 
 """
     Log(X::SE3) -> SVector{6,Float64}" 
@@ -1329,5 +1329,14 @@ end
 # TODO: approx check between several SE2 se2 SO2 so2
 
 
+# rand definition
+Base.rand(::Type{SE2}) = SE2(rand(3)...)
+Base.rand(::Type{SO2}) = SO2(rand()*2pi-pi)
+Base.rand(::Type{se2}) = se2(rand(3)...)
+Base.rand(::Type{so2}) = so2(rand()...)
+Base.rand(::Type{so3}) = so3(SVector(rand(3)...))
+Base.rand(::Type{se3}) = se3(SVector(rand(6)...))
+Base.rand(::Type{SO3}) = SO3(SVector(rand(3)...))
+Base.rand(::Type{SE3}) = SE3(SVector(rand(3)...), rand(SO3))
 
-end
+end # module MotionManifolds
