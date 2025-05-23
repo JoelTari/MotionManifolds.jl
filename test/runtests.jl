@@ -157,3 +157,7 @@ end
   Xr=SO3(R)
   @test isapprox( Xr.u*Xr.w, uw)
 end
+
+# @testset "se2 inversion" begin
+#   xv=se2(rand(3)...)
+# end
