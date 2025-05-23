@@ -476,6 +476,12 @@ struct se3
     new(SA_F64[vuw[1:3]...], so3(SA_F64[vuw[4:6]...]))
   end
   @doc """
+      se3(v::SVector{3,Float64}, uw::so3)
+  """
+  function se3(v::SVector{3,Float64}, uw::so3)
+    new(v,uw)
+  end
+  @doc """
       se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
   """
   function se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
@@ -915,6 +921,14 @@ function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
     pose.t + pose.rot * t
 end
 """
+    +(pose::SE2, t::SVector{2,Float64})
+
+Action overload. SE2 + R2
+"""
+function Base.:+(pose::SE2, t::SVector{2,Float64}) # action SE2+point
+    pose * t
+end
+"""
     +(X1::SE2, X2::SE2)
 """
 function Base.:+(X1::SE2, X2::SE2)
@@ -971,6 +985,14 @@ end
 """
 function Base.:*(pose::SE3, t::SVector{3,Float64}) # action SE3*point
     pose.t + pose.rot * t
+end
+"""
+    +(pose::SE3, t::SVector{3,Float64})
+
+Action overload. SE3 + R3
+"""
+function Base.:+(pose::SE3, t::SVector{3,Float64}) # action SE3+point
+    pose * t
 end
 
 import Base: inv

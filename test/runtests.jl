@@ -158,6 +158,32 @@ end
   @test isapprox( Xr.u*Xr.w, uw)
 end
 
-# @testset "se2 inversion" begin
-#   xv=se2(rand(3)...)
+@testset "Manifold - (minus associated methods)" begin
+  Z=SE2(rand(3)...)
+  Z2=SE2(rand(3)...)
+  @test -Z == inv(Z)
+  @test -Z+Z2 == inv(Z)*Z2
+  @test Z-Z2 == Z*inv(Z2)
+  # SE3
+  Zo=SO3(SVector(rand(3)...))
+  Z=SE3(SVector(rand(3)...), Zo)
+  Zo2=SO3(SVector(rand(3)...))
+  Z2=SE3(SVector(rand(3)...), Zo2)
+  @test -Z == inv(Z)
+  @test -Z+Z2 == inv(Z)*Z2
+  @test Z-Z2 == Z*inv(Z2)
+end
+
+@testset "Lie algebra - (minus associated methods)" begin
+  Z=SE2(rand(3)...)
+  zeta=se2(SVector(rand(3)...))
+  @test Z+Exp(vee(-zeta)) == Z+Exp(-vee(zeta)) == Z-zeta
+  #
+  Zo=SO3(SVector(rand(3)...))
+  Z3=SE3(SVector(rand(3)...), Zo)
+  zeta=se3(SVector(rand(6)...))
+  Z3+Exp(vee(-zeta)) == Z3+Exp(-vee(zeta)) == Z3-zeta
+end
+
+# @testset "Actions + (actions associated methods)" begin
 # end
