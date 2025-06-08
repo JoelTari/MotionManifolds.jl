@@ -57,8 +57,6 @@ export SO2,
     safe_quaternion,
     isapprox
 
-# export SO2FromMat
-
 # julia> skew(SA_F64[1,2,3])
 # 3×3 SMatrix{3, 3, Float64, 9} with indices SOneTo(3)×SOneTo(3):
 #   0.0  -3.0   2.0
@@ -1325,10 +1323,6 @@ function safe_quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
   end
 end
 
-# TODO: to_S1 (unit circle) for SO2
-# TODO: approx check between several SE2 se2 SO2 so2
-
-
 # rand definition
 Base.rand(::Type{SE2}) = SE2(rand(3)...)
 Base.rand(::Type{SO2}) = SO2(rand()*2pi-pi)
@@ -1338,5 +1332,14 @@ Base.rand(::Type{so3}) = so3(SVector(rand(3)...))
 Base.rand(::Type{se3}) = se3(SVector(rand(6)...))
 Base.rand(::Type{SO3}) = SO3(SVector(rand(3)...))
 Base.rand(::Type{SE3}) = SE3(SVector(rand(3)...), rand(SO3))
+
+# length
+Base.length(::so2)=1
+Base.length(::se2)=3
+Base.length(::so3)=3
+Base.length(::se3)=6
+
+# TODO: to_S1 (unit circle) for SO2
+# TODO: approx check between several SE2 se2 SO2 so2
 
 end # module MotionManifolds
