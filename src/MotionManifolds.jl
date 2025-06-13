@@ -40,6 +40,7 @@ export SO2,
     wedge,
     vee,
     Adjm,
+    AdjmZero,
     ecpi,
     Log,
     Exp,
@@ -1338,6 +1339,55 @@ Base.length(::so2)=1
 Base.length(::se2)=3
 Base.length(::so3)=3
 Base.length(::se3)=6
+
+# Compute adjoints for other (useful for downstream libraries that which to abstract Adjm() behavior over Lie group and vector spaces)
+@generated function Adjm(::Float64)
+  1
+end
+@generated function Adjm(::SVector{N, Float64}) where {N}
+  cols=[begin 
+          z=zeros(N);
+          z[i]=1;
+          z
+        end
+        for i in 1:N]
+  Imat=hcat(cols...)
+  quote
+    $Imat
+  end
+end
+# AdjmZero: static zero constructors
+@generated function AdjmZero(::Type{SE2})
+  Imat=SA_F64[1 0 0;0 1 0;0 0 1]
+  quote
+    $Imat
+  end
+end
+@generated function AdjmZero(::Type{SE3})
+  Imat=SA_F64[1 0 0 0 0 0
+              0 1 0 0 0 0
+              0 0 1 0 0 0
+              0 0 0 1 0 0
+              0 0 0 0 1 0
+              0 0 0 0 0 1]
+  quote
+    $Imat
+  end
+end
+# TODO: AdjmZero(SO3) and SO2
+@generated function AdjmZero(::Type{Float64})
+  x=Float64(1.0)
+  quote
+    Adjm($x)
+  end
+end
+@generated function AdjmZero(::Type{SVector{N, Float64}}) where { N }
+  v=SVector{N,Float64}([0 for _ in  1:N])
+  quote
+    Adjm($v)
+  end
+end
+
 
 # TODO: to_S1 (unit circle) for SO2
 # TODO: approx check between several SE2 se2 SO2 so2

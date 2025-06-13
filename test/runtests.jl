@@ -162,16 +162,16 @@ end
   Z=SE2(rand(3)...)
   Z2=SE2(rand(3)...)
   @test -Z == inv(Z)
-  @test -Z+Z2 == inv(Z)*Z2
-  @test Z-Z2 == Z*inv(Z2)
+  @test isapprox(-Z+Z2 |> to_matrix , inv(Z)*Z2 |> to_matrix)
+  @test isapprox(Z-Z2 |> to_matrix, Z*inv(Z2) |> to_matrix)
   # SE3
   Zo=SO3(SVector(rand(3)...))
   Z=SE3(SVector(rand(3)...), Zo)
   Zo2=SO3(SVector(rand(3)...))
   Z2=SE3(SVector(rand(3)...), Zo2)
   @test -Z == inv(Z)
-  @test -Z+Z2 == inv(Z)*Z2
-  @test Z-Z2 == Z*inv(Z2)
+  @test isapprox(-Z+Z2 |> to_matrix , inv(Z)*Z2 |> to_matrix)
+  @test isapprox(Z-Z2 |> to_matrix , Z*inv(Z2) |> to_matrix)
 end
 
 @testset "Lie algebra - (minus associated methods)" begin
@@ -183,6 +183,16 @@ end
   Z3=SE3(SVector(rand(3)...), Zo)
   zeta=se3(SVector(rand(6)...))
   Z3+Exp(vee(-zeta)) == Z3+Exp(-vee(zeta)) == Z3-zeta
+end
+
+@testset "Adjm for trivial groups and zero constructors" begin
+  @test Adjm(2.0)==1
+  @test Adjm(SA_F64[1.,1.,1.]) - [1 0 0;0 1 0;0 0 1] == zeros(3,3)
+  # @test AdjmZero(SVector{2, Float64}) == Adjm(SVector{2,Float64}(rand(2)))
+  @test AdjmZero(Float64) == 1
+  @test AdjmZero(SVector{2, Float64}) - [1 0;0 1] == zeros(2,2)
+  @test AdjmZero(SE2) - [1 0 0;0 1 0;0 0 1] == zeros(3,3)
+  # Adjm(SVector{2,Float64}(rand(2)))
 end
 
 # @testset "Actions + (actions associated methods)" begin
