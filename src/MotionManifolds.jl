@@ -501,9 +501,9 @@ end
 """
 vee(x::se3)=SVector{6,Float64}([x.v...,vee(x.w)...])
 """
-		hat(x::SVector{6,Float64}) -> se3
+		hat(x::SVector{6,Float64}, ::Type{se3})::se3
 """
-hat(x::SVector{6,Float64})=se3(SA_F64[x[1:3]...],SA_F64[x[4:end]...])
+hat(x::SVector{6,Float64},::Type{se3})=se3(SA_F64[x[1:3]...],SA_F64[x[4:end]...])
 
 """
 		to_matrix(x::se3)
@@ -878,14 +878,14 @@ vee(w::so2) = w.w
 vee(sk::se2) = SA_F64[sk.vx, sk.vy, sk.w]
 
 """
-		hat(w::Float64) -> so2
+		hat(w::Float64, ::Type{so2})::so2
 """
-hat(w::Number) = so2(w)
+hat(w::Number, ::Type{so2}) = so2(w)
 """
-		hat(tau::SVector{3,Float64})::se2
+		hat(tau::SVector{3,Float64}, ::Type{se2})::se2
 """
-hat(tau::SVector{3,Float64}) = se2(tau...)
-hat(tau::Vector{Float64}) = begin
+hat(tau::SVector{3,Float64}, ::Type{se2}) = se2(tau...)
+hat(tau::Vector{Float64}, ::Type{se2}) = begin
     # @info "hat ctor: dynamic vector input"
     se2(tau...)
 end
@@ -1093,13 +1093,13 @@ end
 
 so2^\\vee -> SO2
 """
-Exp(w::Float64) = exp_lie(hat(w))
+Exp(w::Float64) = exp_lie(hat(w, so2))
 """
     Exp(tau::SVector{3,Float64})::SE2
 
 se2^\\vee -> SE2
 """
-Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau)).SE2
+Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau,se2)).SE2
 Exp(tau::Vector{Float64}) = begin
     # @info "Exp function call: dynamic input vector"
     Exp(SA_F64[tau...])
@@ -1108,14 +1108,17 @@ end
 """
     ExpAndJr(tau::SVector{3,Float64}) -> (SE2, Jr_exp)
 
+NOTE: DEPRECATED
+
 Returns the group manifold object directly from a vector representation of a Lie algebra element.
 Also returns the right Jacobian, as it allows to save some computations compared to doing the 2 things
 separately.
 """
 function ExpAndJr(tau::SVector{3,Float64})
+    @warn "ExpAndJr is deprecated"
     # technique from manifcpp
     # credit: sola/deray & contributors of https://github.com/artivis/manif
-    expmap_value, K1, K2, w_sq = exp_lie(hat(tau))
+    expmap_value, K1, K2, w_sq = exp_lie(hat(tau,se2))
     vx = tau[1]
     vy = tau[2]
     w = tau[3]
@@ -1236,12 +1239,12 @@ end
 """
 		Jlinv
 """
-Jlinv(sk::se2) = Jrinv(hat(-vee(sk)))
+Jlinv(sk::se2) = Jrinv(hat(-vee(sk),se2))
 
 """
 		Jl
 """
-Jl(sk::se2) = Jr(hat(-vee(sk)))
+Jl(sk::se2) = Jr(hat(-vee(sk),se2))
 
 """
     wedge
@@ -1253,9 +1256,9 @@ wedge=hat
 
 # Numerical calculations for the Exp function
 # useful for tests
-function numExp(x,n=12)
+function numExp(x, ::Type{Lie_T}, n=12) where {Lie_T}
   # Exp(x) = I + x^ + (x^*x^)/2! + (x^*x^*x^)/3! + ... (do it n times)
-  xmat=to_matrix(hat(x))
+  xmat=to_matrix(hat(x, Lie_T))
   N=[1/factorial(i) for i in 1:n]
   Xs=Vector([xmat])
   for i in 2:n
