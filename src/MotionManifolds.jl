@@ -610,11 +610,11 @@ end
 """
 		Jr(vw::se3)
 """
-Jr(vw::se3)=Jl(hat(-vee(vw)))
+Jr(vw::se3)=Jl(hat(-vee(vw), se3))
 """
 		Jrinv(vw::se3)
 """
-Jrinv(vw::se3)=Jlinv(hat(-vee(vw)))
+Jrinv(vw::se3)=Jlinv(hat(-vee(vw), se3))
 
 # end SE3/SO3 TODO: move to bottom
 
@@ -1261,7 +1261,7 @@ function numExp(x, ::Type{Lie_T}, n=12) where {Lie_T}
   xmat=to_matrix(hat(x, Lie_T))
   N=[1/factorial(i) for i in 1:n]
   Xs=Vector([xmat])
-  for i in 2:n
+  for _ in 2:n
     push!(Xs,Xs[end]*xmat)
   end
   result = zeros(size(xmat))
