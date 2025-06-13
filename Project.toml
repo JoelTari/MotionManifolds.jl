@@ -1,7 +1,7 @@
 name = "MotionManifolds"
 uuid = "5f6a8d0c-4116-4dca-9d5b-d58249706984"
 authors = ["Joel Tari"]
-version = "1.4.1"
+version = "1.4.2"
 
 [deps]
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

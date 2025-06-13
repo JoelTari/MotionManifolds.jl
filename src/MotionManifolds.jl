@@ -1392,6 +1392,21 @@ end
   end
 end
 
+# hat and vee for vector spaces (pass-throughs)
+function hat(x::SV,::Type{SV})::SV where {N, SV<:SVector{N}}
+  x
+end
+function hat(x::Float64,::Type{Float64})::Float64
+  x
+end
+function vee(x::SV)::SV where {N, SV<: SVector{N}}
+  x
+end
+function vee(x::Float64)::Float64
+  x
+end
+
+
 
 # TODO: to_S1 (unit circle) for SO2
 # TODO: approx check between several SE2 se2 SO2 so2
