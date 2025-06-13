@@ -1200,7 +1200,7 @@ function Jrinv(sk::se2)
     J33 = 1
     SA_F64[J11 J12 J13; J21 J22 J23; J31 J32 J33]
 end
-function Jrinv(isomorph_to_se2::SVector{3,Float64})
+function Jrinv(isomorph_to_se2::SVector{3,Float64}) # FIX: can cause issues (silent failures) 
     Jrinv(se2(isomorph_to_se2...))
 end
 
