@@ -219,5 +219,13 @@ end
   # Adjm(SVector{2,Float64}(rand(2)))
 end
 
-# @testset "Actions + (actions associated methods)" begin
-# end
+@testset "action" begin
+  M=rand(SE2); p=rand(SVector{2})
+  @test M+p ≈  M*p
+  M=rand(SO2); p=rand(SVector{2})
+  @test M+p ≈  M*p
+  M=rand(SO3); p=rand(SVector{3})
+  @test M+p ≈ M*p
+  M=rand(SE3); p=rand(SVector{3})
+  @test M+p ≈ M*p
+end

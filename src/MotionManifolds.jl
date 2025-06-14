@@ -917,16 +917,16 @@ end
     *(rot1::SO2, rot2::SO2)
 """
 Base.:*(rot1::SO2, rot2::SO2) = rot1+rot2
-# """ TODO:
-#     dot(rot::SO2, t::SVector{2,Float64})
-# """
-# function dot(rot::SO2, t::SVector{2,Float64}) # action SO2*point
-#     to_matrix(rot) * t
-# end
 """
     *(rot::SO2, t::SVector{2,Float64})
 """
 function Base.:*(rot::SO2, t::SVector{2,Float64}) # action SO2*point
+    to_matrix(rot) * t
+end
+"""
+    *(rot::SO2, t::SVector{2,Float64})
+"""
+function Base.:+(rot::SO2, t::SVector{2,Float64}) # action SO2+point
     to_matrix(rot) * t
 end
 """
@@ -993,6 +993,12 @@ end
     *(rot::SO3, t::SVector{3,Float64})
 """
 function Base.:*(rot::SO3, t::SVector{3,Float64}) # action SO3*point
+    rot.R * t
+end
+"""
+    +(rot::SO3, t::SVector{3,Float64})
+"""
+function Base.:+(rot::SO3, t::SVector{3,Float64}) # action SO3+point
     rot.R * t
 end
 """
@@ -1514,5 +1520,63 @@ Jr(::Float64)::Float64=1
 Jl(::Float64)::Float64=1
 Jrinv(::Float64)::Float64=1
 Jlinv(::Float64)::Float64=1
+
+
+
+
+"""
+    JMp_M(M::SE2, p::SVector{2, Float64})
+"""
+function JMp_M(M::SE2,p::SVector{2, Float64})
+  # M=rand(SE2)
+  # p=rand(SVector{2, Float64})
+  R=to_matrix(M.rot)
+  [R R*skew()*p]
+end
+"""
+    JMp_p(M::SE2, _::SVector{2, Float64})
+"""
+function JMp_p(M::SE2,_::SVector{2, Float64})
+  to_matrix(M.rot)
+end
+"""
+    JMp_p(M::SE3, p::SVector{3, Float64})
+"""
+function JMp_p(M::SE3, p::SVector{3, Float64})
+  # M=rand(SE3)
+  # p=rand(SVector{3, Float64})
+  R=to_matrix(M.rot)
+  [R -R*skew(p)]
+end
+"""
+    JMp_M(M::SE3, _::SVector{3, Float64})
+"""
+function JMp_M(M::SE3, _::SVector{3, Float64})
+  to_matrix(M.rot)
+end
+"""
+    JMp_p(_::SVector{N, Float64}, _::SVector{N, Float64})
+"""
+function JMp_p(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
+  ones(SVector{N, Float64})
+end
+"""
+    JMp_M(_::SVector{N, Float64}, _::SVector{N, Float64})
+"""
+function JMp_M(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
+  ones(SVector{N, Float64})
+end
+"""
+    JMp_p(_::Float64, _::Float64)
+"""
+function JMp_p(_::Float64, _::Float64)
+  1.0
+end
+"""
+    JMp_M(_::Float64, _::Float64)
+"""
+function JMp_M(_::Float64, _::Float64)
+  1.0
+end
 
 end # module MotionManifolds
