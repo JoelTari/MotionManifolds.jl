@@ -1559,14 +1559,34 @@ end
 """
     JMp_p(_::SVector{N, Float64}, _::SVector{N, Float64})
 """
-function JMp_p(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
-  ones(SVector{N, Float64})
+@generated function JMp_p(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
 end
 """
     JMp_M(_::SVector{N, Float64}, _::SVector{N, Float64})
 """
-function JMp_M(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
-  ones(SVector{N, Float64})
+@generated function JMp_M(_::SVector{N, Float64},_::SVector{N, Float64}) where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
 end
 """
     JMp_p(_::Float64, _::Float64)
