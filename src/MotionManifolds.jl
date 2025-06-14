@@ -1466,6 +1466,9 @@ end
 # TODO: approx check between several SE2 se2 SO2 so2
 
 # Jr Jl Jrinv Jlinv  for  vector spaces
+"""
+    Jr(::SVector{N,Float64})
+"""
 @generated function Jr(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
     cols=[
         begin
@@ -1479,6 +1482,9 @@ end
         $Imat
     end
 end
+"""
+    Jrinv(::SVector{N,Float64})
+"""
 @generated function Jrinv(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
     cols=[
         begin
@@ -1492,6 +1498,9 @@ end
         $Imat
     end
 end
+"""
+    Jl(::SVector{N,Float64})
+"""
 @generated function Jl(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
     cols=[
         begin
@@ -1505,6 +1514,9 @@ end
         $Imat
     end
 end
+"""
+    Jlinv(::SVector{N,Float64})
+"""
 @generated function Jlinv(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
     cols=[
         begin
