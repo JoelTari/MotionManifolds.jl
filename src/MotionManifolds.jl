@@ -78,11 +78,11 @@ julia> skew()
 ```
 """
 function skew(a::SVector{3,Float64})
-  return SMatrix{3,3,Float64,9}(
-      [  0    -a[3]  a[2]
-        a[3]     0  -a[1]
-       -a[2]   a[1]    0 ] 
-      )
+    return SMatrix{3,3,Float64,9}([
+        0 -a[3] a[2]
+        a[3] 0 -a[1]
+        -a[2] a[1] 0
+    ])
 end
 
 """
@@ -90,10 +90,8 @@ end
 
 Compute the 2x2 skew of a number (1 by default)
 """
-function skew(a::Number=1)
-  return SMatrix{2,2,Float64,4}(
-    a*[0 -1;1 0]
-  )
+function skew(a::Number = 1)
+    return SMatrix{2,2,Float64,4}(a*[0 -1; 1 0])
 end
 
 """
@@ -102,7 +100,7 @@ end
 Check if a matrix is skewed.
 """
 function is_skew(M)
-  M'==-M
+    M'==-M
 end
 
 """
@@ -113,34 +111,34 @@ q0 + q1*i + q2*j + q3*k
 
 # Fields:
 * `q0::Float64`:  q0 + q1*i + q2*j + q3*k
-* `q1::Float64`:  q0 + q1*i + q2*j + q3*k 
+* `q1::Float64`:  q0 + q1*i + q2*j + q3*k
 * `q2::Float64`:  q0 + q1*i + q2*j + q3*k
 * `q3::Float64`:  q0 + q1*i + q2*j + q3*k
 """
 struct Quaternion
-  q0::Float64
-  q1::Float64
-  q2::Float64
-  q3::Float64
+    q0::Float64
+    q1::Float64
+    q2::Float64
+    q3::Float64
 
-  @doc """
-      Quaternion()
+    @doc """
+        Quaternion()
 
-  Quaternion object with 0 valued coefficients
-  """
-  function Quaternion()
-    new(0,0,0,0)
-  end
-  #
-  @doc """
-      Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
+    Quaternion object with 0 valued coefficients
+    """
+    function Quaternion()
+        new(0, 0, 0, 0)
+    end
+    #
+    @doc """
+        Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
 
-  Q = q0 + q1*i + q2*j + q3*k
-  WARNING: this constructor does not check validity.  Prefer using the safe_quaternion() function in this situation.
-  """
-  function Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
-    new(q0,q1,q2,q3)
-  end
+    Q = q0 + q1*i + q2*j + q3*k
+    WARNING: this constructor does not check validity.  Prefer using the safe_quaternion() function in this situation.
+    """
+    function Quaternion(q0::Real, q1::Real, q2::Real, q3::Real)
+        new(q0, q1, q2, q3)
+    end
 end
 
 
@@ -159,73 +157,73 @@ Special Orthogonal group 3
 * `R::SMatrix{3,3,Float64,9}`: Orthogonal Matrix.  ``det(R)=1``
 """
 struct SO3
-  u::SVector{3,Float64}
-  w::Float64
-  R::SMatrix{3,3,Float64,9}
+    u::SVector{3,Float64}
+    w::Float64
+    R::SMatrix{3,3,Float64,9}
 
-  @doc """
-      SO3()
-  """
-  function SO3()
-    new(SVector{3,Float64}([1,0,0]),0,SMatrix{3,3,Float64,9}([1 0 0;0 1 0;0 0 1]))
-  end
-  #
-  @doc """
-      SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
-  """
-  function SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
-    new(u,w,R)
-  end
-  #
-  @doc """
-      SO3(R::SMatrix{3,3,Float64,9})
-  """
-  function SO3(R::SMatrix{3,3,Float64,9})
-    Rskew=R-R'
-    @assert is_skew(Rskew)
-    trace=R[1,1]+R[2,2]+R[3,3]
-    # boring domain checks to avoid errors in edge cases with small numerical errors
-    dom=(trace-1)/2
-    w = abs(dom) > 1 ? isapprox(dom,1) ? acos(1) : acos(-1) : acos(dom)
-    if abs(w) > eps(Float64) && abs(w-pi) > eps(Float64) # OPTIMIZE:
-      uw=0.5*w/sin(w)*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-      return new(uw/w,w,R)
-    else
-      uw=0.5*SA_F64[Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-      return new(uw,w,R)
+    @doc """
+        SO3()
+    """
+    function SO3()
+        new(SVector{3,Float64}([1, 0, 0]), 0, SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1]))
     end
-  end
-  #
-  @doc """
-      SO3(u::SVector{3,Float64},w::Float64)
-  """
-  function SO3(u::SVector{3,Float64},w::Float64)
-    R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
-    new(u,w,R)
-  end
-  #
-  @doc """
-      SO3(wu::SVector{3,Float64})
-  """
-  function SO3(wu::SVector{3,Float64})
-    w=sqrt(wu'wu)
-    if w > eps(Float64)
-      u=wu/sqrt(wu'wu)
-    else
-      u=wu
+    #
+    @doc """
+        SO3(u::SVector{3,Float64},w::Float64,R::SMatrix{3,3,Float64,9})
+    """
+    function SO3(u::SVector{3,Float64}, w::Float64, R::SMatrix{3,3,Float64,9})
+        new(u, w, R)
     end
-    R=[1 0 0;0 1 0;0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
-    new(u,w,R)
-  end
-  #
-  @doc """
-      SO3(q::Quaternion)
-  """
-  function SO3(q::Quaternion)
-    # compute the log
-    xw=so3(q)
-    Exp(vee(xw), SO3)
-  end
+    #
+    @doc """
+        SO3(R::SMatrix{3,3,Float64,9})
+    """
+    function SO3(R::SMatrix{3,3,Float64,9})
+        Rskew=R-R'
+        @assert is_skew(Rskew)
+        trace=R[1, 1]+R[2, 2]+R[3, 3]
+        # boring domain checks to avoid errors in edge cases with small numerical errors
+        dom=(trace-1)/2
+        w = abs(dom) > 1 ? isapprox(dom, 1) ? acos(1) : acos(-1) : acos(dom)
+        if abs(w) > eps(Float64) && abs(w-pi) > eps(Float64) # OPTIMIZE:
+            uw=0.5*w/sin(w)*SA_F64[Rskew[3, 2], Rskew[1, 3], Rskew[2, 1]]
+            return new(uw/w, w, R)
+        else
+            uw=0.5*SA_F64[Rskew[3, 2], Rskew[1, 3], Rskew[2, 1]]
+            return new(uw, w, R)
+        end
+    end
+    #
+    @doc """
+        SO3(u::SVector{3,Float64},w::Float64)
+    """
+    function SO3(u::SVector{3,Float64}, w::Float64)
+        R=[1 0 0; 0 1 0; 0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
+        new(u, w, R)
+    end
+    #
+    @doc """
+        SO3(wu::SVector{3,Float64})
+    """
+    function SO3(wu::SVector{3,Float64})
+        w=sqrt(wu'wu)
+        if w > eps(Float64)
+            u=wu/sqrt(wu'wu)
+        else
+            u=wu
+        end
+        R=[1 0 0; 0 1 0; 0 0 1]+sin(w)*skew(u)+(1-cos(w))*skew(u)^2
+        new(u, w, R)
+    end
+    #
+    @doc """
+        SO3(q::Quaternion)
+    """
+    function SO3(q::Quaternion)
+        # compute the log
+        xw=so3(q)
+        Exp(vee(xw), SO3)
+    end
 end
 
 
@@ -239,40 +237,40 @@ end
 * `w::Float64`: amplitude
 """
 struct so3
-  u::SVector{3,Float64}
-  w::Float64
+    u::SVector{3,Float64}
+    w::Float64
 
-  @doc """
-      so3()
-  """
-  function so3()
-    new(SVector{3,Float64}([1,0,0]),0)
-  end
-  @doc """
-      so3(uw::SVector{3,Float64})
-  """
-  function so3(uw::SVector{3,Float64})
-    w=sqrt(uw'uw)
-    w > eps(Float64) ? new(uw/w,w) : new(uw,w)
-  end
-  @doc """
-      so3(u::SVector{3,Float64}, w::Float64)
-  """
-  function so3(u::SVector{3,Float64}, w::Real)
-    new(u,w)
-  end
-  @doc """
-      so3(q::Quaternion)
-  """
-  function so3(q::Quaternion)
-    q0=q.q0
-    v=SA_F64[q.q1,q.q2,q.q3]
-    normv=sqrt(v'v)
-    uw=2*atan(normv,q0)/normv*v
-    w=sqrt(uw'uw)
-    u=uw/w
-    new(u,w)
-  end
+    @doc """
+        so3()
+    """
+    function so3()
+        new(SVector{3,Float64}([1, 0, 0]), 0)
+    end
+    @doc """
+        so3(uw::SVector{3,Float64})
+    """
+    function so3(uw::SVector{3,Float64})
+        w=sqrt(uw'uw)
+        w > eps(Float64) ? new(uw/w, w) : new(uw, w)
+    end
+    @doc """
+        so3(u::SVector{3,Float64}, w::Float64)
+    """
+    function so3(u::SVector{3,Float64}, w::Real)
+        new(u, w)
+    end
+    @doc """
+        so3(q::Quaternion)
+    """
+    function so3(q::Quaternion)
+        q0=q.q0
+        v=SA_F64[q.q1, q.q2, q.q3]
+        normv=sqrt(v'v)
+        uw=2*atan(normv, q0)/normv*v
+        w=sqrt(uw'uw)
+        u=uw/w
+        new(u, w)
+    end
 end
 
 """
@@ -282,20 +280,22 @@ vee(xr::so3) = xr.u*xr.w
 """
 		hat(uw::SVector{3,Float64}, ::Type{so3})::so3
 """
-function hat(uw::SVector{3,Float64},::Type{so3})
-  w=sqrt(uw'uw)
-  return w > eps(Float64) ? so3(uw/w,w) : so3(uw,0)
+function hat(uw::SVector{3,Float64}, ::Type{so3})
+    w=sqrt(uw'uw)
+    return w > eps(Float64) ? so3(uw/w, w) : so3(uw, 0)
 end
 
 """
 		to_matrix(xr::so3)
 """
 function to_matrix(xr::so3)
-  (a1,a2,a3)=xr.u*xr.w
-  SMatrix{3,3,Float64,9}([0 -a3 a2
-                         a3 0 -a1
-                         -a2 a1 0])
-end 
+    (a1, a2, a3)=xr.u*xr.w
+    SMatrix{3,3,Float64,9}([
+        0 -a3 a2
+        a3 0 -a1
+        -a2 a1 0
+    ])
+end
 """
 		to_matrix(Xr::SO3)
 """
@@ -312,7 +312,7 @@ to_matrix(Xr::SO3) = Xr.R
 		Log(X::SO3) -> SVector3
 """
 function Log(X::SO3)
-  vee(so3(X.u*X.w))
+    vee(so3(X.u*X.w))
 end
 
 # """
@@ -335,27 +335,21 @@ end
 
 """
     Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})::SO3
-
-``\\mathfrak{so}(3)^\\vee~\\to~\\mathrm{SO}(3)``  
 """
 function Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})::SO3
-  SO3(wu)
+    SO3(wu)
 end
 """
     Exp(u::SVector{3,Float64}, w::Float64, ::Union{Type{SO3},Type{so3}})::SO3
-
-so3^\\vee -> SO3
 """
 function Exp(u::SVector{3,Float64}, w::Float64, ::Union{Type{SO3},Type{so3}})::SO3
-  SO3(u,w)
+    SO3(u, w)
 end
 """
     Exp(r::so3)::SO3
-
-so3^\\vee -> SO3
 """
 function Exp(r::so3)::SO3
-  SO3(r.u,r.w)
+    SO3(r.u, r.w)
 end
 # """
 # 		SO3(u::SVector{3,Float64}, w::Float64)
@@ -367,10 +361,12 @@ end
 # SO3(uw::SVector{3,Float64}) = Exp(uw, so3)
 
 """
-		Adjm(Xr::SO3)
+    Adjm(Xr::SO3)
+
+The adjoint matrix.
 """
 function Adjm(Xr::SO3)
-  Xr.R
+    Xr.R
 end
 
 
@@ -378,15 +374,16 @@ end
     Jr(xr::so3)
 """
 function Jr(xr::so3)
-  u=xr.u
-  w=xr.w
-  # defer to the other definition
-  if w > eps(Float64)
-    return SMatrix{3,3,Float64}([1 0 0;0 1 0;0 0 1]) - (1-cos(w))/w^2*skew(u*w) + (w-sin(w))/w^3*skew(u*w)^2
-  else
-    # @warn "eps"
-    return SMatrix{3,3,Float64}([1 0 0;0 1 0;0 0 1])
-  end
+    u=xr.u
+    w=xr.w
+    # defer to the other definition
+    if w > eps(Float64)
+        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1]) - (1-cos(w))/w^2*skew(u*w) +
+               (w-sin(w))/w^3*skew(u*w)^2
+    else
+        # @warn "eps"
+        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1])
+    end
 end
 
 """
@@ -398,14 +395,16 @@ Jl(xr::so3)=Jr(xr)'
     Jrinv(xr::so3)
 """
 function Jrinv(xr::so3)
-  u=xr.u
-  w=xr.w
-  if w > eps(Float64)
-    return SMatrix{3,3,Float64}([1 0 0;0 1 0;0 0 1]) + 0.5*skew(u*w) + (1/w^2-(1+cos(w))/(2w*sin(w)))*skew(u*w)^2
-  else
-    # @warn "eps"
-    return SMatrix{3,3,Float64}([1 0 0;0 1 0;0 0 1])
-  end
+    u=xr.u
+    w=xr.w
+    if w > eps(Float64)
+        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1]) +
+               0.5*skew(u*w) +
+               (1/w^2-(1+cos(w))/(2w*sin(w)))*skew(u*w)^2
+    else
+        # @warn "eps"
+        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1])
+    end
 end
 """
     Jlinv(xr::so3)
@@ -425,37 +424,37 @@ Special Euclidean Group 3.
 * `rot::SO3`: rotation (Special Orthogonal 3)
 """
 struct SE3
-  t::SVector{3,Float64}
-  rot::SO3
+    t::SVector{3,Float64}
+    rot::SO3
 
-  @doc """
-      SE3()
-  """
-  function SE3()
-    new(SA_F64[0,0,0],SO3())
-  end
-  @doc """
-      SE3(t::SVector{3,Float64}, rot::SO3)
-  """
-  function SE3(t::SVector{3,Float64}, rot::SO3)
-    new(t,rot)
-  end
-  @doc """
-      SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
+    @doc """
+        SE3()
+    """
+    function SE3()
+        new(SA_F64[0, 0, 0], SO3())
+    end
+    @doc """
+        SE3(t::SVector{3,Float64}, rot::SO3)
+    """
+    function SE3(t::SVector{3,Float64}, rot::SO3)
+        new(t, rot)
+    end
+    @doc """
+        SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
 
-  Warning: no checks on quaternion validity
-  """
-  function SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real )
-    new(SA_F64[x,y,z], SO3(Quaternion(q0,q1,q2,q3)))
-  end
-  @doc """
-      SE3(x::Real, y::Real, z::Real, Q::SVector{4,Float64} )
+    Warning: no checks on quaternion validity
+    """
+    function SE3(x::Real, y::Real, z::Real, q0::Real, q1::Real, q2::Real, q3::Real)
+        new(SA_F64[x, y, z], SO3(Quaternion(q0, q1, q2, q3)))
+    end
+    @doc """
+        SE3(x::Real, y::Real, z::Real, Q::SVector{4,Float64} )
 
-  Warning: no checks on quaternion validity
-  """
-  function SE3(x::Real, y::Real, z::Real, Q::Vector{Float64} )
-    new(SA_F64[x,y,z], SO3(Quaternion(Q...)))
-  end
+    Warning: no checks on quaternion validity
+    """
+    function SE3(x::Real, y::Real, z::Real, Q::Vector{Float64})
+        new(SA_F64[x, y, z], SO3(Quaternion(Q...)))
+    end
 end
 
 """
@@ -468,38 +467,38 @@ end
 * `w::so3`: rotational twist.
 """
 struct se3
-  v::SVector{3,Float64}
-  w::so3
-  @doc """
-      se3(v::SVector{3,Float64}, uw::SVector{3,Float64})
-  """
-  function se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) 
-    new(v, so3(uw))
-  end
-  @doc """
-      se3(vuw::SVector{6,Float64})
-  """
-  function se3(vuw::SVector{6,Float64}) 
-    new(SA_F64[vuw[1:3]...], so3(SA_F64[vuw[4:6]...]))
-  end
-  @doc """
-      se3(v::SVector{3,Float64}, uw::so3)
-  """
-  function se3(v::SVector{3,Float64}, uw::so3)
-    new(v,uw)
-  end
-  @doc """
-      se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
-  """
-  function se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
-    new(v, so3(u,w))
-  end
-  @doc """
-      se3()
-  """
-  function se3()
-    new(SA_F64[0,0,0],so3())
-  end
+    v::SVector{3,Float64}
+    w::so3
+    @doc """
+        se3(v::SVector{3,Float64}, uw::SVector{3,Float64})
+    """
+    function se3(v::SVector{3,Float64}, uw::SVector{3,Float64})
+        new(v, so3(uw))
+    end
+    @doc """
+        se3(vuw::SVector{6,Float64})
+    """
+    function se3(vuw::SVector{6,Float64})
+        new(SA_F64[vuw[1:3]...], so3(SA_F64[vuw[4:6]...]))
+    end
+    @doc """
+        se3(v::SVector{3,Float64}, uw::so3)
+    """
+    function se3(v::SVector{3,Float64}, uw::so3)
+        new(v, uw)
+    end
+    @doc """
+        se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64)
+    """
+    function se3(v::SVector{3,Float64}, u::SVector{3,Float64}, w::Float64)
+        new(v, so3(u, w))
+    end
+    @doc """
+        se3()
+    """
+    function se3()
+        new(SA_F64[0, 0, 0], so3())
+    end
 end
 # se3(v::SVector{3,Float64}, uw::SVector{3,Float64}) = se3(v, so3(uw))
 # se3(v::SVector{3,Float64}, u::SVector{3,Float64},w::Float64) = se3(v, so3(u,w))
@@ -507,129 +506,129 @@ end
 """
 		vee(x::se3)
 """
-vee(x::se3)=SVector{6,Float64}([x.v...,vee(x.w)...])
+vee(x::se3)=SVector{6,Float64}([x.v..., vee(x.w)...])
 """
 		hat(x::SVector{6,Float64}, ::Type{se3})::se3
 """
-hat(x::SVector{6,Float64},::Type{se3})=se3(SA_F64[x[1:3]...],SA_F64[x[4:end]...])
+hat(x::SVector{6,Float64}, ::Type{se3})=se3(SA_F64[x[1:3]...], SA_F64[x[4:end]...])
 
 """
 		to_matrix(x::se3)
 """
 function to_matrix(x::se3)
-  SMatrix{4,4,Float64,16}([to_matrix(x.w) x.v;0 0 0 0])
+    SMatrix{4,4,Float64,16}([to_matrix(x.w) x.v; 0 0 0 0])
 end
 
 """
 		to_matrix(X::SE3)
 """
-to_matrix(X::SE3)=SMatrix{4,4,Float64,16}([to_matrix(X.rot) X.t;0 0 0 1])
+to_matrix(X::SE3)=SMatrix{4,4,Float64,16}([to_matrix(X.rot) X.t; 0 0 0 1])
 
 """
-		Adjm(X::SE3)
+    Adjm(X::SE3)
+
+The adjoint matrix.
 """
 function Adjm(X::SE3)
-  SMatrix{6,6,Float64,36}(
-    [
-      X.rot.R   skew(X.t)*X.rot.R
-      zeros(3,3) X.rot.R
-    ]
-  )
+    SMatrix{6,6,Float64,36}([
+        X.rot.R skew(X.t)*X.rot.R
+        zeros(3, 3) X.rot.R
+    ])
 end
 
 #  Exp, Log, exp_lie, log_lie, Jl, Jr, Jlinv, Jlinv, QJSE3 (QJSE3 is internal), VTHSO3 (internal)
 
-# function internal_VTHSO3(LogX::SVector{3,Float64}) 
+# function internal_VTHSO3(LogX::SVector{3,Float64})
 #   # so3 input
 #   Jl(uw, so3) # see remark eq (174), Solà 2018
 # end
 
 """
-    Log(X::SE3) -> SVector{6,Float64}" 
+    Log(X::SE3) -> SVector{6,Float64}"
 """
 function Log(X::SE3)
-  w=Log(X.rot)
-  Vinv=Jlinv(hat(w, so3)) # see remark eq (174), Solà 2018
-  SA_F64[Vinv*X.t...,w...]
+    w=Log(X.rot)
+    Vinv=Jlinv(hat(w, so3)) # see remark eq (174), Solà 2018
+    SA_F64[Vinv*X.t..., w...]
 end
 
 """
-		Exp(tau::SVector{6,Float64},::Union{Type{SE3},Type{se3}})::SE3
+    Exp(tau::SVector{6,Float64},::Union{Type{SE3},Type{se3}})::SE3
 """
-function Exp(tau::SVector{6,Float64},::Union{Type{SE3},Type{se3}})::SE3
-  v=SVector{3,Float64}(tau[1:3]...)
-  w=SVector{3,Float64}(tau[4:6]...)
-  V=Jl(hat(w,so3))  # see remark eq (174), Solà 2018
-  SE3(V*v,Exp(w,so3))
+function Exp(tau::SVector{6,Float64}, ::Union{Type{SE3},Type{se3}})::SE3
+    v=SVector{3,Float64}(tau[1:3]...)
+    w=SVector{3,Float64}(tau[4:6]...)
+    V=Jl(hat(w, so3))  # see remark eq (174), Solà 2018
+    SE3(V*v, Exp(w, so3))
 end
 """
-		Exp(tau::se3)::SE3
+    Exp(tau::se3)::SE3
 """
 function Exp(tau::se3)::SE3
-  v=tau.v # v isa SVector
-  w=tau.w # w isa so3 
-  V=Jl(w)  # see remark eq (174), Solà 2018
-  SE3(V*v,Exp(w))
+    v=tau.v # v isa SVector
+    w=tau.w # w isa so3
+    V=Jl(w)  # see remark eq (174), Solà 2018
+    SE3(V*v, Exp(w))
 end
 
 function internal_QJSE3(vw::se3)
-  rho=vw.v
-  th=vw.w.w
-  wth=vw.w.u*th
-  sth=sin(th)
-  cth=cos(th)
-  thsq=th^2
-  thcube=thsq*th
-  thquatro=thsq*thsq
-  thquint=thquatro*th
-  skt=skew(wth)
-  skr=skew(rho)
-  A=skt*skr
-  B=skr*skt
-  C=A*skt
-  D=skt*A
-  E=B*skt
-  F=C*skt
-  G=skt*C
-  if thquint > eps(Float64)
-    f3=(th-sth)/thcube
-    f4=(1-thsq/2-cth)/thquatro
-    f5=(f4-3(th-sth-thcube/6)/thquint)
-  else
-    # @warn "eps"
-    # small angle approximations, based on 
-    # manif/impl/se3/SE3Tangent_base.h  l261 commit de52f8b
-    f3=1.0/6+thsq/120
-    f4=-1.0/24+thsq/720
-    f5=-1.0/60
-  end
-  # TODO: check 0.5 factor in front of f5
-  return 0.5skr+f3*(A+B+C)-f4*(D+E-3*C)-0.5*f5*(F+G)
+    rho=vw.v
+    th=vw.w.w
+    wth=vw.w.u*th
+    sth=sin(th)
+    cth=cos(th)
+    thsq=th^2
+    thcube=thsq*th
+    thquatro=thsq*thsq
+    thquint=thquatro*th
+    skt=skew(wth)
+    skr=skew(rho)
+    A=skt*skr
+    B=skr*skt
+    C=A*skt
+    D=skt*A
+    E=B*skt
+    F=C*skt
+    G=skt*C
+    if thquint > eps(Float64)
+        f3=(th-sth)/thcube
+        f4=(1-thsq/2-cth)/thquatro
+        f5=(f4-3(th-sth-thcube/6)/thquint)
+    else
+        # @warn "eps"
+        # small angle approximations, based on
+        # manif/impl/se3/SE3Tangent_base.h  l261 commit de52f8b
+        f3=1.0/6+thsq/120
+        f4=-1.0/24+thsq/720
+        f5=-1.0/60
+    end
+    # TODO: check 0.5 factor in front of f5
+    return 0.5skr+f3*(A+B+C)-f4*(D+E-3*C)-0.5*f5*(F+G)
 end
 
 """
-		Jl(vw::se3)
+    Jl(vw::se3)
 """
 function Jl(vw::se3)
-  Jlw=Jl(vw.w)
-  Q=internal_QJSE3(vw)
-  SMatrix{6,6,Float64,36}([Jlw Q; zeros(3,3) Jlw])
+    Jlw=Jl(vw.w)
+    Q=internal_QJSE3(vw)
+    SMatrix{6,6,Float64,36}([Jlw Q; zeros(3, 3) Jlw])
 end
 """
-		Jlinv(vw::se3)
+    Jlinv(vw::se3)
 """
 function Jlinv(vw::se3)
-  Jlinvw=Jlinv(vw.w)
-  Q=internal_QJSE3(vw)
-  SMatrix{6,6,Float64,36}([Jlinvw -Jlinvw*Q*Jlinvw; zeros(3,3) Jlinvw])
+    Jlinvw=Jlinv(vw.w)
+    Q=internal_QJSE3(vw)
+    SMatrix{6,6,Float64,36}([Jlinvw -Jlinvw*Q*Jlinvw; zeros(3, 3) Jlinvw])
 end
 
 """
-		Jr(vw::se3)
+    Jr(vw::se3)
 """
 Jr(vw::se3)=Jl(hat(-vee(vw), se3))
 """
-		Jrinv(vw::se3)
+    Jrinv(vw::se3)
 """
 Jrinv(vw::se3)=Jlinv(hat(-vee(vw), se3))
 
@@ -660,33 +659,33 @@ struct SO2
         SO2()
     """
     function SO2()
-      new(0,1,0)
+        new(0, 1, 0)
     end
     @doc """
         SO2(th::Number)
     """
     function SO2(th::Number)
-      sth = sin(th)
-      cth = cos(th)
-      new(th, cth, sth)
+        sth = sin(th)
+        cth = cos(th)
+        new(th, cth, sth)
     end
     @doc """
         SO2(co,si)
     """
-    function SO2(co,si)
-      new(atan(si, co), co, si)
+    function SO2(co, si)
+        new(atan(si, co), co, si)
     end
     @doc """
         SO2(th,co,si)
     """
-    function SO2(th::Real,co::Real,si::Real)
-      new(th, co, si)
+    function SO2(th::Real, co::Real, si::Real)
+        new(th, co, si)
     end
     @doc """
         SO2(R::SMatrix{2,2,Float64,4})
     """
     function SO2(R::SMatrix{2,2,Float64,4})
-      new(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
+        new(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
     end
 end
 
@@ -702,15 +701,15 @@ struct so2
     @doc """
         so2(w::Number=0)
     """
-    function so2(w::Number=0)
-      new(w)
+    function so2(w::Number = 0)
+        new(w)
     end
 end
 
 # TODO: CONTINUE HERE for docs
 
 """
-    SE2 
+    SE2
 
 SE2, Special Euclidean group 2
 
@@ -725,14 +724,14 @@ struct SE2
     @doc """
         SE2(x::Number, y::Number, th::Number)
     """
-    function SE2(x::Number, y::Number, th::Number) 
-      new(SA_F64[x, y], SO2(th))
+    function SE2(x::Number, y::Number, th::Number)
+        new(SA_F64[x, y], SO2(th))
     end
     @doc """
         SE2()
     """
-    function SE2() 
-      new(SA_F64[0, 0], SO2())
+    function SE2()
+        new(SA_F64[0, 0], SO2())
     end
     @doc """
         SE2(t::Vector{Float64}, rot::SO2)
@@ -754,8 +753,8 @@ struct SE2
     @doc """
         SE2(X::SMatrix{3,3,Float64})
     """
-    function SE2(X::SMatrix{3,3,Float64})  
-      new(X[1:2, 3], SO2(X[1:2, 1:2]))
+    function SE2(X::SMatrix{3,3,Float64})
+        new(X[1:2, 3], SO2(X[1:2, 1:2]))
     end
 end
 # SE2(x, y, th) = begin
@@ -812,19 +811,19 @@ struct se2
         se2(tau::SVector{3,Float64})
     """
     function se2(tau::SVector{3,Float64})
-      new(tau...)
+        new(tau...)
     end
     @doc """
         se2()
     """
     function se2()
-      new(0,0,0)
+        new(0, 0, 0)
     end
     @doc """
         se2(vx,vy,w)
     """
-    function se2(vx,vy,w)
-      new(vx,vy,w)
+    function se2(vx, vy, w)
+        new(vx, vy, w)
     end
 end
 # se2(tau::Vector{Float64}) = begin
@@ -907,7 +906,7 @@ hat(tau::Vector{Float64}, ::Type{se2}) = begin
     se2(tau...)
 end
 
-import Base: *,+
+import Base: *, +
 """
     +(rot1::SO2, rot2::SO2)
 """
@@ -931,7 +930,7 @@ function Base.:*(rot::SO2, t::SVector{2,Float64}) # action SO2*point
     to_matrix(rot) * t
 end
 """
-    *(pose::SE2, t::SVector{2,Float64}) 
+    *(pose::SE2, t::SVector{2,Float64})
 """
 function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
     pose.t + pose.rot * t
@@ -956,7 +955,7 @@ end
 Right-plus:  X Exp(tau)
 """
 function Base.:+(X::SE2, tau::se2)
-  X+Exp(tau)
+    X+Exp(tau)
 end
 """
     *(X1::SE2, X2::SE2)
@@ -965,13 +964,13 @@ Base.:*(X1::SE2, X2::SE2)=X1+X2
 """
     +(Xr1::SO3,Xr2::SO3)
 """
-function Base.:+(Xr1::SO3,Xr2::SO3)
-  SO3(Xr1.R*Xr2.R)
+function Base.:+(Xr1::SO3, Xr2::SO3)
+    SO3(Xr1.R*Xr2.R)
 end
 """
     *(Xr1::SO3,Xr2::SO3)
 """
-Base.:*(Xr1::SO3,Xr2::SO3) = Xr1+Xr2
+Base.:*(Xr1::SO3, Xr2::SO3) = Xr1+Xr2
 """
     +(X1::SE3, X2::SE3)
 """
@@ -988,7 +987,7 @@ Base.:*(X1::SE3, X2::SE3) = X1+X2
 Right-plus:  X Exp(tau)
 """
 function Base.:+(X::SE3, tau::se3)
-  X+Exp(tau)
+    X+Exp(tau)
 end
 """
     *(rot::SO3, t::SVector{3,Float64})
@@ -1044,22 +1043,22 @@ julia> X=SE3(randn(3) |> SVector{3,Float64}, SO3(randn(3) |> SVector{3,Float64})
 true
 ```
 """
-Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t),inv(X.rot))  # test: to_matrix(X*inv(X))  ≈ I(4)
+Base.:inv(X::SE3) = SE3(-(inv(X.rot)*X.t), inv(X.rot))  # test: to_matrix(X*inv(X))  ≈ I(4)
 
 import Base: -
 Base.:-(R::SO2) = inv(R)
 Base.:-(X::SE2) = inv(X)
-Base.:-(xv::se2) = se2(-xv.vx,-xv.vy,-xv.w)
+Base.:-(xv::se2) = se2(-xv.vx, -xv.vy, -xv.w)
 Base.:-(Xr::SO3) = inv(Xr)
 Base.:-(xr::so3) = so3(-xr.u*xr.w)
 Base.:-(Y::SE3) = inv(Y)
 Base.:-(xv::se3) = se3(-xv.v, -xv.w)
-Base.:-(R1::SO2,R2::SO2) = R1*inv(R2)
-Base.:-(X1::SE2,X2::SE2) = X1*inv(X2)
-Base.:-(X::SE2,tau::se2) = X+Exp(-vee(tau), se2)
-Base.:-(Xr1::SO3,Xr2::SO3) = Xr1*inv(Xr2)
-Base.:-(Y1::SE3,Y2::SE3) = Y1*inv(Y2)
-Base.:-(X::SE3,tau::se3) = X+Exp(-vee(tau), se3)
+Base.:-(R1::SO2, R2::SO2) = R1*inv(R2)
+Base.:-(X1::SE2, X2::SE2) = X1*inv(X2)
+Base.:-(X::SE2, tau::se2) = X+Exp(-vee(tau), se2)
+Base.:-(Xr1::SO3, Xr2::SO3) = Xr1*inv(Xr2)
+Base.:-(Y1::SE3, Y2::SE3) = Y1*inv(Y2)
+Base.:-(X::SE3, tau::se3) = X+Exp(-vee(tau), se3)
 
 """
     Adjm(rot::SO2)
@@ -1069,7 +1068,9 @@ The adjoint matrix.
 Adjm(rot::SO2) = 1
 
 """
-		Adjm(X::SE2)
+    Adjm(X::SE2)
+
+The adjoint matrix.
 """
 function Adjm(X::SE2)
     SA_F64[
@@ -1102,13 +1103,11 @@ function exp_lie(sk::se2)
     end
     t = SA_F64[K1 -K2; K2 K1] * SA_F64[sk.vx; sk.vy]
     # returns a named tuple
-    (SE2 = SE2(t, Exp(sk.w,so2)), K1 = K1, K2 = K2, w_sq = w_sq)
+    (SE2 = SE2(t, Exp(sk.w, so2)), K1 = K1, K2 = K2, w_sq = w_sq)
 end
 
 """
     Exp(w::Float64)::SO2
-
-so2^\\vee -> SO2
 """
 Exp(w::Float64, ::Type{so2}) = exp_lie(hat(w, so2))
 """
@@ -1118,7 +1117,7 @@ Exp(r::so2) = exp_lie(hat(r.w, so2))
 """
     Exp(tau::SVector{3,Float64}, ::Union{Type{SE2},Type{se2}})::SE2
 """
-Exp(tau::SVector{3,Float64}, ::Union{Type{SE2},Type{se2}}) = exp_lie(hat(tau,se2)).SE2
+Exp(tau::SVector{3,Float64}, ::Union{Type{SE2},Type{se2}}) = exp_lie(hat(tau, se2)).SE2
 """
     Exp(tau::se2)::SE2
 """
@@ -1137,7 +1136,7 @@ function ExpAndJr(tau::SVector{3,Float64})
     @warn "ExpAndJr is deprecated"
     # technique from manifcpp
     # credit: sola/deray & contributors of https://github.com/artivis/manif
-    expmap_value, K1, K2, w_sq = exp_lie(hat(tau,se2))
+    expmap_value, K1, K2, w_sq = exp_lie(hat(tau, se2))
     vx = tau[1]
     vy = tau[2]
     w = tau[3]
@@ -1190,7 +1189,7 @@ end
 Log(X::SE2) = vee(log_lie(X))
 
 """
-		Jrinv
+    Jrinv(sk::se2)
 """
 function Jrinv(sk::se2)
     # technique from manifcpp
@@ -1222,13 +1221,13 @@ function Jrinv(sk::se2)
     J33 = 1
     SA_F64[J11 J12 J13; J21 J22 J23; J31 J32 J33]
 end
-function Jrinv(isomorph_to_se2::SVector{3,Float64}) # FIX: can cause issues (silent failures) 
+function Jrinv(isomorph_to_se2::SVector{3,Float64}) # FIX: can cause issues (silent failures)
     @warn "Jrinv(isomorph_to_se2::SVector{3,Float64}) is deprecated.  Use Jrinv( ::se2 ) instead."
     Jrinv(se2(isomorph_to_se2...))
 end
 
 """
-		Jr
+    Jr(sk::se2)
 """
 function Jr(sk::se2)
     # technique from manifcpp
@@ -1256,14 +1255,14 @@ function Jr(sk::se2)
 end
 
 """
-		Jlinv
+    Jlinv(sk::se2)
 """
-Jlinv(sk::se2) = Jrinv(hat(-vee(sk),se2))
+Jlinv(sk::se2) = Jrinv(hat(-vee(sk), se2))
 
 """
-		Jl
+    Jl(sk::se2)
 """
-Jl(sk::se2) = Jr(hat(-vee(sk),se2))
+Jl(sk::se2) = Jr(hat(-vee(sk), se2))
 
 """
     wedge
@@ -1275,22 +1274,22 @@ wedge=hat
 
 # Numerical calculations for the Exp function
 # useful for tests
-function numExp(x, ::Type{Lie_T}, n=12) where {Lie_T}
-  # Exp(x) = I + x^ + (x^*x^)/2! + (x^*x^*x^)/3! + ... (do it n times)
-  xmat=to_matrix(hat(x, Lie_T))
-  N=[1/factorial(i) for i in 1:n]
-  Xs=Vector([xmat])
-  for _ in 2:n
-    push!(Xs,Xs[end]*xmat)
-  end
-  result = zeros(size(xmat))
-  # I prefer not to add a dependency on LinearAlgebra
-  # so I will define the identity 'manually'
-  for i in 1:size(xmat,1)
-    result[i,i]=1
-  end
-  result+=N'*Xs
-  return result
+function numExp(x, ::Type{Lie_T}, n = 12) where {Lie_T}
+    # Exp(x) = I + x^ + (x^*x^)/2! + (x^*x^*x^)/3! + ... (do it n times)
+    xmat=to_matrix(hat(x, Lie_T))
+    N=[1/factorial(i) for i = 1:n]
+    Xs=Vector([xmat])
+    for _ = 2:n
+        push!(Xs, Xs[end]*xmat)
+    end
+    result = zeros(size(xmat))
+    # I prefer not to add a dependency on LinearAlgebra
+    # so I will define the identity 'manually'
+    for i = 1:size(xmat, 1)
+        result[i, i]=1
+    end
+    result+=N'*Xs
+    return result
 end
 
 import Base: isapprox
@@ -1298,14 +1297,14 @@ import Base: isapprox
     Base.isapprox(Qa::Quaternion, Qb::Quaternion)
 
 # Arguments
-- `Qa::Quaternion`: 
-- `Qb::Quaternion`: 
+- `Qa::Quaternion`:
+- `Qb::Quaternion`:
 """
 function Base.isapprox(Qa::Quaternion, Qb::Quaternion)
-  isapprox(Qa.q0, Qb.q0) && 
-  isapprox(Qa.q1, Qb.q1) && 
-  isapprox(Qa.q2, Qb.q2) && 
-  isapprox(Qa.q3, Qb.q3)
+    isapprox(Qa.q0, Qb.q0) &&
+        isapprox(Qa.q1, Qb.q1) &&
+        isapprox(Qa.q2, Qb.q2) &&
+        isapprox(Qa.q3, Qb.q3)
 end
 
 """
@@ -1315,22 +1314,22 @@ Rotation matrix associated with this quaternion.
 Note: not the skew symmetric matrix of the corresponding Lie algebra.
 """
 function to_matrix(q::Quaternion)
-  to_matrix(SO3(q))
+    to_matrix(SO3(q))
 end
 
 """
     to_quat(xw::so3)
 """
 function to_quat(xw::so3)
-  Quaternion(cos(xw.w/2), sin(xw.w/2)*xw.u... )
+    Quaternion(cos(xw.w/2), sin(xw.w/2)*xw.u...)
 end
 
 """
     to_quat(W::SO3)
 """
 function to_quat(W::SO3)
-  xw=Log(W)
-  to_quat(hat(xw, so3))
+    xw=Log(W)
+    to_quat(hat(xw, so3))
 end
 
 """
@@ -1338,13 +1337,13 @@ end
 
 Quaternion constructor, but with validity check.
 """
-function safe_quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
-  sum_squares = q0*q0 + q1*q1 + q2*q2 + q3*q3
-  if isapprox(sum_squares, 1)
-    Quaternion(q0,q1,q2,q3)
-  else
-    throw(AssertionError("Sum of squares coefficient of a quaternion should be 1"))
-  end
+function safe_quaternion(q0::Real, q1::Real, q2::Real, q3::Real)
+    sum_squares = q0*q0 + q1*q1 + q2*q2 + q3*q3
+    if isapprox(sum_squares, 1)
+        Quaternion(q0, q1, q2, q3)
+    else
+        throw(AssertionError("Sum of squares coefficient of a quaternion should be 1"))
+    end
 end
 
 # rand definition
@@ -1364,84 +1363,87 @@ Base.length(::so3)=3
 Base.length(::se3)=6
 
 # Compute adjoints for other (useful for downstream libraries that which to abstract Adjm() behavior over Lie group and vector spaces)
-@generated function Adjm(::Float64)
-  1
+@generated function Adjm(::Float64)::Float64
+    1.0
 end
-@generated function Adjm(::SVector{N, Float64}) where {N}
-  cols=[begin 
-          z=zeros(N);
-          z[i]=1;
-          z
-        end
-        for i in 1:N]
-  Imat=hcat(cols...)
-  quote
-    $Imat
-  end
+@generated function Adjm(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
 end
 # AdjmZero: static zero constructors
 @generated function AdjmZero(::Type{SE2})
-  Imat=SA_F64[1 0 0;0 1 0;0 0 1]
-  quote
-    $Imat
-  end
+    Imat=SA_F64[1 0 0; 0 1 0; 0 0 1]
+    quote
+        $Imat
+    end
 end
 @generated function AdjmZero(::Type{SE3})
-  Imat=SA_F64[1 0 0 0 0 0
-              0 1 0 0 0 0
-              0 0 1 0 0 0
-              0 0 0 1 0 0
-              0 0 0 0 1 0
-              0 0 0 0 0 1]
-  quote
-    $Imat
-  end
+    Imat=SA_F64[
+        1 0 0 0 0 0
+        0 1 0 0 0 0
+        0 0 1 0 0 0
+        0 0 0 1 0 0
+        0 0 0 0 1 0
+        0 0 0 0 0 1
+    ]
+    quote
+        $Imat
+    end
 end
 # TODO: AdjmZero(SO3) and SO2
 @generated function AdjmZero(::Type{Float64})
-  x=Float64(1.0)
-  quote
-    Adjm($x)
-  end
+    x=Float64(1.0)
+    quote
+        Adjm($x)
+    end
 end
-@generated function AdjmZero(::Type{SVector{N, Float64}}) where { N }
-  v=SVector{N,Float64}([0 for _ in  1:N])
-  quote
-    Adjm($v)
-  end
+@generated function AdjmZero(::Type{SVector{N,Float64}}) where {N}
+    v=SVector{N,Float64}([0 for _ = 1:N])
+    quote
+        Adjm($v)
+    end
 end
 
 # hat and vee for vector spaces (pass-throughs)
-function hat(x::SV,::Type{SV})::SV where {N, SV<:SVector{N}}
-  x
+function hat(x::SV, ::Type{SV})::SV where {N,SV<:SVector{N}}
+    x
 end
-function hat(x::Float64,::Type{Float64})::Float64
-  x
+function hat(x::Float64, ::Type{Float64})::Float64
+    x
 end
-function vee(x::SV)::SV where {N, SV<: SVector{N}}
-  x
+function vee(x::SV)::SV where {N,SV<:SVector{N}}
+    x
 end
 function vee(x::Float64)::Float64
-  x
+    x
 end
 
 # Log for vector spaces (pass-throughs)
-function Log(x::SVector{N, Float64})::SVector{N, Float64} where {N}
-  @info "Log vector space pass-through"
-  x
+function Log(x::SVector{N,Float64})::SVector{N,Float64} where {N}
+    @info "Log vector space pass-through"
+    x
 end
 function Log(x::Float64)::Float64
-  @info "Log Float64 pass-through"
-  x
+    @info "Log Float64 pass-through"
+    x
 end
 # Exp for vector spaces (pass-throughs)
-function Exp(x::SV, ::Type{SV})::SV where {N, SV<: SVector{N}}
-  @info "Exp vector space pass-through"
-  x
+function Exp(x::SV, ::Type{SV})::SV where {N,SV<:SVector{N}}
+    @info "Exp vector space pass-through"
+    x
 end
 function Exp(x::Float64, ::Type{Float64})::Float64
-  @info "Exp Float64 pass-through"
-  x
+    @info "Exp Float64 pass-through"
+    x
 end
 # TODO: later: have Exp(x::Float64)  and Exp(x::SV)
 # Reason for not defining it now: risk of silent failures with v1 API
@@ -1449,5 +1451,63 @@ end
 
 # TODO: to_S1 (unit circle) for SO2
 # TODO: approx check between several SE2 se2 SO2 so2
+
+# Jr Jl Jrinv Jlinv  for  vector spaces
+@generated function Jr(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
+end
+@generated function Jrinv(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
+end
+@generated function Jl(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
+end
+@generated function Jlinv(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+    cols=[
+        begin
+            z=zeros(N);
+            z[i]=1;
+            z
+        end for i = 1:N
+    ]
+    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    quote
+        $Imat
+    end
+end
+Jr(::Float64)::Float64=1
+Jl(::Float64)::Float64=1
+Jrinv(::Float64)::Float64=1
+Jlinv(::Float64)::Float64=1
 
 end # module MotionManifolds
