@@ -52,19 +52,19 @@ println(":: Starting the test set ::")
     @test SO2(th + th2).th != (SO2(th) * SO2(th2 + 2 * pi)).th # th2 not the same +2pi
     @test SO2(th + th2).c ≈ (SO2(th) * SO2(th2 + 2 * pi)).c
     @test ecpi(SO2(th)) ≈ ecpi(SO2(th - 234 * 2 * pi))
-    @test Log(Exp(th)) ≈ Log(Exp(th + 12pi))
+    @test Log(Exp(th,so2)) ≈ Log(Exp(th + 12pi,so2))
     @test inv(SO2(th2)).c ≈ cos(-th2)
     @test inv(SO2(th2)).s ≈ sin(-th2)
-    @test Log(Exp(5.001 * pi)) ≈ (5.001 - 6) * pi # non-bijectivity
-    @test Log(Exp(rand1 * 8 * pi)) ≈ ecpi(Exp(rand1 * 8 * pi))
-    @test Log(Exp(tau)) ≈ tau
-    @test Log(Exp(tau0)) ≈ tau0
-    @test Log(Exp(tau0a)) ≈ tau0a
-    @test Log(Exp(tauOOB)) != tauOOB
+    @test Log(Exp(5.001 * pi,so2)) ≈ (5.001 - 6) * pi # non-bijectivity
+    @test Log(Exp(rand1 * 8 * pi,so2)) ≈ ecpi(Exp(rand1 * 8 * pi,so2))
+    @test Log(Exp(tau,se2)) ≈ tau
+    @test Log(Exp(tau0,se2)) ≈ tau0
+    @test Log(Exp(tau0a,se2)) ≈ tau0a
+    @test Log(Exp(tauOOB,se2)) != tauOOB
     @test Jr(se2(tau)) ≈ inv(Jrinv(se2(tau)))
     # @test Jr(se2(tau)) ≈ ExpAndJr(tau)[2]
     @test Jl(se2(tauOOB)) ≈ inv(Jlinv(se2(tauOOB)))
-    @test to_matrix(Exp(tau)) ≈ to_matrix(exp_lie(se2(tau))[1])
+    @test to_matrix(Exp(se2(tau))) ≈ to_matrix(exp_lie(se2(tau))[1])
     @test to_matrix(hat(tau,se2)) ≈ to_matrix(se2(tau))
     @test to_matrix(inv(X)) ≈ inv(to_matrix(X))
     @test to_matrix(inv(Xsk)) ≈ inv(to_matrix(Xsk))
@@ -90,10 +90,34 @@ println(":: Starting the test set ::")
     res1=to_matrix(X)*to_matrix(se2(tau))*to_matrix(inv(X))
     res2=hat(Adjm(X)*vee(se2(tau)),se2) |> to_matrix
     @test isapprox(res1,res2)
+    rot=SO2(th)
+    res1=to_matrix(rot)*to_matrix(so2(th2))*to_matrix(inv(rot))
+    res2=hat(Adjm(rot)*vee(so2(th2)),so2) |> to_matrix
+    @test isapprox(res1,res2)
 
-    # TODO: test SE3 / SO3
+    stau=se2(tau)
+    sth=so2(th)
+    vr=SVector(rand(6)...)
+    svr=se3(vr)
+    xr=SVector(rand(3)...)
+    sxr=so3(xr)
+    @test to_matrix(Exp(stau)) ≈ to_matrix(Exp(tau, se2))
+    @test to_matrix(Exp(sth)) ≈ to_matrix(Exp(th, so2))
+    @test to_matrix(Exp(sxr)) ≈ to_matrix(Exp(xr, so3))
+    @test to_matrix(Exp(svr)) ≈ to_matrix(Exp(vr, se3))
 
-
+    @test Jlinv(svr) ≈ inv(Jl(svr))
+    @test Jrinv(svr) ≈ inv(Jr(svr))
+    @test Jlinv(sxr) ≈ inv(Jl(sxr))
+    @test Jrinv(sxr) ≈ inv(Jr(sxr))
+    # adjoint relations for SE3 and SO3
+    Xvr=rand(SE3)
+    res1=to_matrix(Xvr)*to_matrix(svr)*to_matrix(inv(Xvr))
+    res2=hat(Adjm(Xvr)*vee(svr),se3) |> to_matrix
+    Xr=rand(SO3)
+    res1=to_matrix(Xr)*to_matrix(sxr)*to_matrix(inv(Xr))
+    res2=hat(Adjm(Xr)*vee(sxr),so3) |> to_matrix
+    @test isapprox(res1,res2)
 end
 
 @testset "MotionManifolds operators" begin
@@ -177,12 +201,12 @@ end
 @testset "Lie algebra - (minus associated methods)" begin
   Z=SE2(rand(3)...)
   zeta=se2(SVector(rand(3)...))
-  @test Z+Exp(vee(-zeta)) == Z+Exp(-vee(zeta)) == Z-zeta
+  @test Z+Exp(vee(-zeta), se2) == Z+Exp(-vee(zeta), se2) == Z-zeta
   #
   Zo=SO3(SVector(rand(3)...))
   Z3=SE3(SVector(rand(3)...), Zo)
   zeta=se3(SVector(rand(6)...))
-  Z3+Exp(vee(-zeta)) == Z3+Exp(-vee(zeta)) == Z3-zeta
+  @test Z3+Exp(vee(-zeta), se3) == Z3+Exp(-vee(zeta),se3) == Z3-zeta
 end
 
 @testset "Adjm for trivial groups and zero constructors" begin

@@ -338,16 +338,24 @@ end
 
 ``\\mathfrak{so}(3)^\\vee~\\to~\\mathrm{SO}(3)``  
 """
-function Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})
+function Exp(wu::SVector{3,Float64}, ::Union{Type{SO3},Type{so3}})::SO3
   SO3(wu)
 end
 """
-    Exp(u::SVector{3,Float64}, w::Float64)::SO3
+    Exp(u::SVector{3,Float64}, w::Float64, ::Union{Type{SO3},Type{so3}})::SO3
 
 so3^\\vee -> SO3
 """
-function Exp(u::SVector{3,Float64}, w::Float64)
+function Exp(u::SVector{3,Float64}, w::Float64, ::Union{Type{SO3},Type{so3}})::SO3
   SO3(u,w)
+end
+"""
+    Exp(r::so3)::SO3
+
+so3^\\vee -> SO3
+"""
+function Exp(r::so3)::SO3
+  SO3(r.u,r.w)
 end
 # """
 # 		SO3(u::SVector{3,Float64}, w::Float64)
@@ -546,13 +554,22 @@ function Log(X::SE3)
 end
 
 """
-		Exp(tau::SVector{6,Float64})::SE3
+		Exp(tau::SVector{6,Float64},::Union{Type{SE3},Type{se3}})::SE3
 """
-function Exp(tau::SVector{6,Float64})
+function Exp(tau::SVector{6,Float64},::Union{Type{SE3},Type{se3}})::SE3
   v=SVector{3,Float64}(tau[1:3]...)
   w=SVector{3,Float64}(tau[4:6]...)
   V=Jl(hat(w,so3))  # see remark eq (174), Solà 2018
   SE3(V*v,Exp(w,so3))
+end
+"""
+		Exp(tau::se3)::SE3
+"""
+function Exp(tau::se3)::SE3
+  v=tau.v # v isa SVector
+  w=tau.w # w isa so3 
+  V=Jl(w)  # see remark eq (174), Solà 2018
+  SE3(V*v,Exp(w))
 end
 
 function internal_QJSE3(vw::se3)
@@ -939,7 +956,7 @@ end
 Right-plus:  X Exp(tau)
 """
 function Base.:+(X::SE2, tau::se2)
-  X+Exp(vee(tau))
+  X+Exp(tau)
 end
 """
     *(X1::SE2, X2::SE2)
@@ -971,7 +988,7 @@ Base.:*(X1::SE3, X2::SE3) = X1+X2
 Right-plus:  X Exp(tau)
 """
 function Base.:+(X::SE3, tau::se3)
-  X+Exp(vee(tau))
+  X+Exp(tau)
 end
 """
     *(rot::SO3, t::SVector{3,Float64})
@@ -1039,10 +1056,10 @@ Base.:-(Y::SE3) = inv(Y)
 Base.:-(xv::se3) = se3(-xv.v, -xv.w)
 Base.:-(R1::SO2,R2::SO2) = R1*inv(R2)
 Base.:-(X1::SE2,X2::SE2) = X1*inv(X2)
-Base.:-(X::SE2,tau::se2) = X+Exp(-vee(tau))
+Base.:-(X::SE2,tau::se2) = X+Exp(-vee(tau), se2)
 Base.:-(Xr1::SO3,Xr2::SO3) = Xr1*inv(Xr2)
 Base.:-(Y1::SE3,Y2::SE3) = Y1*inv(Y2)
-Base.:-(X::SE3,tau::se3) = X+Exp(-vee(tau))
+Base.:-(X::SE3,tau::se3) = X+Exp(-vee(tau), se3)
 
 """
     Adjm(rot::SO2)
@@ -1085,7 +1102,7 @@ function exp_lie(sk::se2)
     end
     t = SA_F64[K1 -K2; K2 K1] * SA_F64[sk.vx; sk.vy]
     # returns a named tuple
-    (SE2 = SE2(t, Exp(sk.w)), K1 = K1, K2 = K2, w_sq = w_sq)
+    (SE2 = SE2(t, Exp(sk.w,so2)), K1 = K1, K2 = K2, w_sq = w_sq)
 end
 
 """
@@ -1093,17 +1110,19 @@ end
 
 so2^\\vee -> SO2
 """
-Exp(w::Float64) = exp_lie(hat(w, so2))
+Exp(w::Float64, ::Type{so2}) = exp_lie(hat(w, so2))
 """
-    Exp(tau::SVector{3,Float64})::SE2
-
-se2^\\vee -> SE2
+    Exp(w::so2)::SO2
 """
-Exp(tau::SVector{3,Float64}) = exp_lie(hat(tau,se2)).SE2
-Exp(tau::Vector{Float64}) = begin
-    # @info "Exp function call: dynamic input vector"
-    Exp(SA_F64[tau...])
-end
+Exp(r::so2) = exp_lie(hat(r.w, so2))
+"""
+    Exp(tau::SVector{3,Float64}, ::Union{Type{SE2},Type{se2}})::SE2
+"""
+Exp(tau::SVector{3,Float64}, ::Union{Type{SE2},Type{se2}}) = exp_lie(hat(tau,se2)).SE2
+"""
+    Exp(tau::se2)::SE2
+"""
+Exp(tau::se2) = exp_lie(tau).SE2
 
 """
     ExpAndJr(tau::SVector{3,Float64}) -> (SE2, Jr_exp)
@@ -1406,6 +1425,26 @@ function vee(x::Float64)::Float64
   x
 end
 
+# Log for vector spaces (pass-throughs)
+function Log(x::SVector{N, Float64})::SVector{N, Float64} where {N}
+  @info "Log vector space pass-through"
+  x
+end
+function Log(x::Float64)::Float64
+  @info "Log Float64 pass-through"
+  x
+end
+# Exp for vector spaces (pass-throughs)
+function Exp(x::SV, ::Type{SV})::SV where {N, SV<: SVector{N}}
+  @info "Exp vector space pass-through"
+  x
+end
+function Exp(x::Float64, ::Type{Float64})::Float64
+  @info "Exp Float64 pass-through"
+  x
+end
+# TODO: later: have Exp(x::Float64)  and Exp(x::SV)
+# Reason for not defining it now: risk of silent failures with v1 API
 
 
 # TODO: to_S1 (unit circle) for SO2
