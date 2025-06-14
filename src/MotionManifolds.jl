@@ -1221,10 +1221,6 @@ function Jrinv(sk::se2)
     J33 = 1
     SA_F64[J11 J12 J13; J21 J22 J23; J31 J32 J33]
 end
-function Jrinv(isomorph_to_se2::SVector{3,Float64}) # FIX: can cause issues (silent failures)
-    @warn "Jrinv(isomorph_to_se2::SVector{3,Float64}) is deprecated.  Use Jrinv( ::se2 ) instead."
-    Jrinv(se2(isomorph_to_se2...))
-end
 
 """
     Jr(sk::se2)
@@ -1427,6 +1423,9 @@ function vee(x::Float64)::Float64
     x
 end
 
+# TODO: later: remove @info logs below
+# Reason for not doing so early: risk of silent failure in legacy client codebases unproperly updated
+#
 # Log for vector spaces (pass-throughs)
 function Log(x::SVector{N,Float64})::SVector{N,Float64} where {N}
     @info "Log vector space pass-through"
@@ -1445,8 +1444,14 @@ function Exp(x::Float64, ::Type{Float64})::Float64
     @info "Exp Float64 pass-through"
     x
 end
-# TODO: later: have Exp(x::Float64)  and Exp(x::SV)
-# Reason for not defining it now: risk of silent failures with v1 API
+function Exp(x::SV)::SV where {N,SV<:SVector{N}}
+    @info "Exp vector space pass-through"
+    x
+end
+function Exp(x::Float64)::Float64
+    @info "Exp Float64 pass-through"
+    x
+end
 
 
 # TODO: to_S1 (unit circle) for SO2
