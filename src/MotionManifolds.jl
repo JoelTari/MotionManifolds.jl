@@ -56,7 +56,9 @@ export SO2,
     Quaternion,
     to_quat,
     safe_quaternion,
-    isapprox
+    isapprox,
+    JMp_M,
+    JMp_p
 
 # julia> skew(SA_F64[1,2,3])
 # 3×3 SMatrix{3, 3, Float64, 9} with indices SOneTo(3)×SOneTo(3):
@@ -1542,17 +1544,17 @@ end
 """
     JMp_p(M::SE3, p::SVector{3, Float64})
 """
-function JMp_p(M::SE3, p::SVector{3, Float64})
+function JMp_p(M::SE3, _::SVector{3, Float64})
   # M=rand(SE3)
   # p=rand(SVector{3, Float64})
-  R=to_matrix(M.rot)
-  [R -R*skew(p)]
+  to_matrix(M.rot)
 end
 """
     JMp_M(M::SE3, _::SVector{3, Float64})
 """
-function JMp_M(M::SE3, _::SVector{3, Float64})
-  to_matrix(M.rot)
+function JMp_M(M::SE3, p::SVector{3, Float64})
+  R=to_matrix(M.rot)
+  [R -R*skew(p)]
 end
 """
     JMp_p(_::SVector{N, Float64}, _::SVector{N, Float64})
