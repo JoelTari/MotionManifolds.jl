@@ -1437,28 +1437,28 @@ end
 #
 # Log for vector spaces (pass-throughs)
 function Log(x::SVector{N,Float64})::SVector{N,Float64} where {N}
-    @info "Log vector space pass-through"
+    # @info "Log vector space pass-through"
     x
 end
 function Log(x::Float64)::Float64
-    @info "Log Float64 pass-through"
+    # @info "Log Float64 pass-through"
     x
 end
 # Exp for vector spaces (pass-throughs)
 function Exp(x::SV, ::Type{SV})::SV where {N,SV<:SVector{N}}
-    @info "Exp vector space pass-through"
+    # @info "Exp vector space pass-through"
     x
 end
 function Exp(x::Float64, ::Type{Float64})::Float64
-    @info "Exp Float64 pass-through"
+    # @info "Exp Float64 pass-through"
     x
 end
 function Exp(x::SV)::SV where {N,SV<:SVector{N}}
-    @info "Exp vector space pass-through"
+    # @info "Exp vector space pass-through"
     x
 end
 function Exp(x::Float64)::Float64
-    @info "Exp Float64 pass-through"
+    # @info "Exp Float64 pass-through"
     x
 end
 
