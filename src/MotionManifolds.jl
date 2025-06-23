@@ -58,7 +58,8 @@ export SO2,
     safe_quaternion,
     isapprox,
     JMp_M,
-    JMp_p
+    JMp_p,
+    isLieAlgebra
 
 # julia> skew(SA_F64[1,2,3])
 # 3×3 SMatrix{3, 3, Float64, 9} with indices SOneTo(3)×SOneTo(3):
@@ -1611,6 +1612,15 @@ end
 """
 function JMp_M(_::Float64, _::Float64)
   1.0
+end
+
+function isLieAlgebra(::Type{V},::Type{T}) where {V,T}
+  ((V == se2) && (T == SE2)) ||
+  ((V == so2) && (T == SO2)) ||
+  ((V == se3) && (T == SE3)) ||
+  ((V == so3) && (T == SO3)) ||
+  ((V == Float64) && (T == Float64)) ||
+  ((V <: SVector) && (T==V))
 end
 
 end # module MotionManifolds

@@ -229,3 +229,16 @@ end
   M=rand(SE3); p=rand(SVector{3})
   @test M+p ≈ M*p
 end
+
+@testset "isLieAlgebra" begin
+ @test isLieAlgebra(se2,SE2)
+ @test !isLieAlgebra(se2,Float64)
+ @test !isLieAlgebra(se2,SE3)
+ @test isLieAlgebra(se3,SE3)
+ @test isLieAlgebra(so3,SO3)
+ @test !isLieAlgebra(so2,SO3)
+ @test isLieAlgebra(so2,SO2)
+ @test isLieAlgebra(Float64,Float64)
+ @test isLieAlgebra(SVector{2,Float64},SVector{2,Float64})
+ @test !isLieAlgebra(SVector{2,Float64},SVector{3,Float64})
+end
