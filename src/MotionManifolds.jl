@@ -182,6 +182,7 @@ struct SO3
         SO3(R::SMatrix{3,3,Float64,9})
     """
     function SO3(R::SMatrix{3,3,Float64,9})
+        # FIX: use quaternions as intermediary to build R
         Rskew=R-R'
         @assert is_skew(Rskew)
         trace=R[1, 1]+R[2, 2]+R[3, 3]
@@ -1319,7 +1320,10 @@ Rotation matrix associated with this quaternion.
 Note: not the skew symmetric matrix of the corresponding Lie algebra.
 """
 function to_matrix(q::Quaternion)
-    to_matrix(SO3(q))
+    # to_matrix(SO3(q))
+    SA_F64[2(q.q0^2+q.q1^2)-1 2(q.q1*q.q2 - q.q0*q.q3) 2(q.q1*q.q3 + q.q0*q.q2)
+      2(q.q1*q.q2 + q.q0*q.q3) 2(q.q0^2+q.q2^2)-1 2(q.q2*q.q3 - q.q0*q.q1)
+      2(q.q1*q.q3 - q.q0*q.q2) 2(q.q2*q.q3 + q.q0*q.q1) 2(q.q0^2+q.q3^2)-1]
 end
 
 """
