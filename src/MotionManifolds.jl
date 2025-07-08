@@ -59,7 +59,8 @@ export SO2,
     isapprox,
     JMp_M,
     JMp_p,
-    isLieAlgebra
+    isLieAlgebra,
+    CtorZero
 
 # julia> skew(SA_F64[1,2,3])
 # 3×3 SMatrix{3, 3, Float64, 9} with indices SOneTo(3)×SOneTo(3):
@@ -1625,5 +1626,18 @@ function isLieAlgebra(::Type{V},::Type{T}) where {V,T}
   ((V == Float64) && (T == Float64)) ||
   ((V <: SVector) && (T==V))
 end
+
+# some zero constructors
+CtorZero(::Type{se2}) = se2()
+CtorZero(::Type{SE2}) = SE2()
+CtorZero(::Type{se3}) = se3()
+CtorZero(::Type{SE3}) = SE3()
+@generated function CtorZero(::Type{SVector{N, Float64}}) where {N} 
+  staticzerovec=[0.0 for _ in 1:N]
+  quote
+    SVector{N, Float64}($staticzerovec)
+  end
+end
+CtorZero(::Type{Float64}) = 0.
 
 end # module MotionManifolds
