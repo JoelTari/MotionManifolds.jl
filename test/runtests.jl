@@ -164,6 +164,24 @@ end
   @test q ≈ q_bis
   # text 2 : check those 4 matrices are the same (approx)
   @test to_matrix(q) ≈ to_matrix(W) ≈ to_matrix(SO3(q)) ≈ to_matrix(Exp(so3(q) |> vee, SO3))
+  # quat operations
+  q1=rand(Quaternion)
+  q2=rand(Quaternion)
+  W1 = SO3(q1)
+  W2 = SO3(q2)
+  @test isapprox(q1+q2 |> SO3 |> to_matrix, W1+W2 |> to_matrix) 
+  @test isapprox(q1-q2 |> SO3 |> to_matrix, W1-W2 |> to_matrix) 
+  W1=rand(SO3)
+  W2=rand(SO3)
+  q1=to_quat(W1)
+  q2=to_quat(W2)
+  @test isapprox(q1+q2 |> SO3 |> to_matrix, W1+W2 |> to_matrix) 
+  @test isapprox(q1-q2 |> SO3 |> to_matrix, W1-W2 |> to_matrix) 
+  # quaternion action on a 3D vector
+  W=rand(SO3)
+  q=to_quat(W)
+  x=rand(SVector{3,Float64})
+  @test isapprox( W+x, q+x )
 end
 
 @testset "SO3 Matrix" begin

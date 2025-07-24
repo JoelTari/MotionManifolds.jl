@@ -136,8 +136,9 @@ struct Quaternion
     #
     @doc """
         Quaternion(q0::Real,q1::Real,q2::Real,q3::Real)
+        Quaternion(w::Real,x::Real,y::Real,z::Real)
 
-    Q = q0 + q1*i + q2*j + q3*k
+    Q = q0 + q1*i + q2*j + q3*k = w + x*i + y*j + z*k
     WARNING: this constructor does not check validity.  Prefer using the safe_quaternion() function in this situation.
     """
     function Quaternion(q0::Real, q1::Real, q2::Real, q3::Real)
@@ -940,6 +941,23 @@ function Base.:*(pose::SE2, t::SVector{2,Float64}) # action SE2*point
     pose.t + pose.rot * t
 end
 """
+  *(qa::Quaternion, qb::Quaternion)
+"""
+function Base.:*(qa::Quaternion,qb::Quaternion)
+ # (ae-bf- cg-dh)+(af+be+ch-dg)\mathbf{i} + (ag+ce+df-bh)\mathbf{j}+(ah+de+bg-cf)\mathbf{k}
+  w=qa.q0*qb.q0-qa.q1*qb.q1-qa.q2*qb.q2-qa.q3*qb.q3
+  x=qa.q0*qb.q1+qa.q1*qb.q0+qa.q2*qb.q3-qa.q3*qb.q2
+  y=qa.q0*qb.q2+qa.q2*qb.q0+qa.q3*qb.q1-qa.q1*qb.q3
+  z=qa.q0*qb.q3+qa.q3*qb.q0+qa.q1*qb.q2-qa.q2*qb.q1
+  Quaternion(w,x,y,z)
+end
+"""
+  +(qa::Quaternion, qb::Quaternion)
+"""
+function Base.:+(qa::Quaternion,qb::Quaternion)
+  qa*qb
+end
+"""
     +(pose::SE2, t::SVector{2,Float64})
 
 Action overload. SE2 + R2
@@ -1019,6 +1037,24 @@ Action overload. SE3 + R3
 function Base.:+(pose::SE3, t::SVector{3,Float64}) # action SE3+point
     pose * t
 end
+"""
+    *(q::Quaternion, x::SVector{3,Float64})
+
+Action of a quaternion on a 3D vector. Quaternion * R3
+"""
+function Base.:*(q::Quaternion, x::SVector{3,Float64})
+  xq=Quaternion(0,x...)
+  xqprime=q+xq+(-q)
+  SVector{3,Float64}(xqprime.q1,xqprime.q2,xqprime.q3)
+end
+"""
+    *(q::Quaternion, x::SVector{3,Float64})
+
+Action overload. Quaternion + R3
+"""
+function Base.:+(q::Quaternion, x::SVector{3,Float64})
+  q*x
+end
 
 import Base: inv
 """
@@ -1029,6 +1065,10 @@ Base.:inv(rot::SO2) = SO2(-rot.th, rot.c, -rot.s)
     inv(X::SE2)
 """
 Base.:inv(X::SE2) = SE2(-(inv(X.rot) * X.t), inv(X.rot))
+"""
+    inv(q::Quaternion)
+"""
+Base.:inv(q::Quaternion) = Quaternion(q.q0,-q.q1,-q.q2,-q.q3)
 
 # # Example
 # ```jldoctest
@@ -1063,12 +1103,14 @@ Base.:-(Xr::SO3) = inv(Xr)
 Base.:-(xr::so3) = so3(-xr.u*xr.w)
 Base.:-(Y::SE3) = inv(Y)
 Base.:-(xv::se3) = se3(-xv.v, -xv.w)
+Base.:-(q::Quaternion) = inv(q)
 Base.:-(R1::SO2, R2::SO2) = R1*inv(R2)
 Base.:-(X1::SE2, X2::SE2) = X1*inv(X2)
 Base.:-(X::SE2, tau::se2) = X+Exp(-vee(tau), se2)
 Base.:-(Xr1::SO3, Xr2::SO3) = Xr1*inv(Xr2)
 Base.:-(Y1::SE3, Y2::SE3) = Y1*inv(Y2)
 Base.:-(X::SE3, tau::se3) = X+Exp(-vee(tau), se3)
+Base.:-(qa::Quaternion,qb) = qa + -(qb)
 
 """
     Adjm(rot::SO2)
@@ -1364,6 +1406,11 @@ Base.rand(::Type{so3}) = so3(SVector(rand(3)...))
 Base.rand(::Type{se3}) = se3(SVector(rand(6)...))
 Base.rand(::Type{SO3}) = SO3(SVector(rand(3)...))
 Base.rand(::Type{SE3}) = SE3(SVector(rand(3)...), rand(SO3))
+Base.rand(::Type{Quaternion}) = begin
+  th=rand()
+  u=rand(3)
+  Quaternion(cos(th/2), u*sin(th/2)...)
+end
 
 # length
 Base.length(::so2)=1
