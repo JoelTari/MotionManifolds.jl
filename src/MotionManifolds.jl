@@ -131,7 +131,7 @@ struct Quaternion
     Quaternion object with 0 valued coefficients
     """
     function Quaternion()
-        new(0, 0, 0, 0)
+        new(1, 0, 0, 0)
     end
     #
     @doc """
@@ -273,8 +273,8 @@ struct so3
         normv=sqrt(v'v)
         uw=2*atan(normv, q0)/normv*v
         w=sqrt(uw'uw)
-        u=uw/w
-        new(u, w)
+        u=uw/w # TODO: write tests
+        isnan(w) ? so3() : new(u, w)
     end
 end
 
