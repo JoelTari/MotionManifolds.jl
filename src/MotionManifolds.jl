@@ -1686,5 +1686,18 @@ CtorZero(::Type{SE3}) = SE3()
   end
 end
 CtorZero(::Type{Float64}) = 0.
+Base.zero(::Type{se2}) = se2()
+Base.zero(::Type{SE2}) = SE2()
+Base.zero(::Type{se3}) = se3()
+Base.zero(::Type{SE3}) = SE3()
+Base.zero(::Type{so2}) = so2()
+Base.zero(::Type{SO2}) = SO2()
+Base.zero(::Type{so3}) = so3()
+Base.zero(::Type{SO3}) = SO3()
+Base.zero(::Type{Quaternion}) = Quaternion()
+# NOTE: Not sure if CtorZero should be kept since zero(::Type{XXX}) exists.
+# Furthermore, zero(::Type{XXX}) is used in std functions such as sum(), which 
+# makes it necessary, and CtorZero becomes thus a duplicate.
+# => CtorZero should be marked as deprecated. (TODO)
 
 end # module MotionManifolds
