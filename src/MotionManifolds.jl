@@ -82,11 +82,12 @@ julia> skew()
 ```
 """
 function skew(a::SVector{3,Float64})
-    return SMatrix{3,3,Float64,9}([
-        0 -a[3] a[2]
-        a[3] 0 -a[1]
-        -a[2] a[1] 0
-    ])
+    # return SMatrix{3,3,Float64,9}([
+    #     0 -a[3] a[2]
+    #     a[3] 0 -a[1]
+    #     -a[2] a[1] 0
+    # ])
+    return SMatrix{3,3,Float64,9}(0,a[3],-a[2],-a[3],0,a[1],a[2],-a[1],0)
 end
 
 """
@@ -95,7 +96,7 @@ end
 Compute the 2x2 skew of a number (1 by default)
 """
 function skew(a::Number = 1)
-    return SMatrix{2,2,Float64,4}(a*[0 -1; 1 0])
+    return SMatrix{2,2,Float64,4}(0,a,-a,0)
 end
 
 """
@@ -1597,7 +1598,8 @@ function JMp_M(M::SE2,p::SVector{2, Float64})
   # M=rand(SE2)
   # p=rand(SVector{2, Float64})
   R=to_matrix(M.rot)
-  [R R*skew()*p]
+  y=R*(skew()*p)
+  SMatrix{2,3,Float64,6}([R y])
 end
 """
     JMp_p(M::SE2, _::SVector{2, Float64})
@@ -1618,7 +1620,8 @@ end
 """
 function JMp_M(M::SE3, p::SVector{3, Float64})
   R=to_matrix(M.rot)
-  [R -R*skew(p)]
+  Rr = -R*skew(p)
+  SMatrix{3,6,Float64,18}([R Rr])
 end
 """
     JMp_p(_::SVector{N, Float64}, _::SVector{N, Float64})
