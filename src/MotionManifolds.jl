@@ -862,7 +862,8 @@ end
 """
 		to_matrix(r::SO2)
 """
-to_matrix(r::SO2) = SA_F64[r.c -r.s; r.s r.c]
+# to_matrix(r::SO2) = SA_F64[r.c -r.s; r.s r.c]
+to_matrix(r::SO2) = SMatrix{2,2,Float64,4}( r.c, r.s, -r.s, r.c )
 """
 		to_matrix(X::SE2)
 """
