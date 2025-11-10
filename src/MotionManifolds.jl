@@ -307,13 +307,6 @@ end
 """
 to_matrix(Xr::SO3) = Xr.R
 
-# """
-#     vee(Rskew::SMatrix{3,3,Float64})
-#
-# Rskew  -> so3^\\vee = R^3
-# """
-# vee(Rskew::SMatrix{3,3,Float64}) = [Rskew[3,2],Rskew[1,3],Rskew[2,1]]
-
 """
 		Log(X::SO3) -> SVector3
 """
@@ -384,11 +377,11 @@ function Jr(xr::so3)
     w=xr.w
     # defer to the other definition
     if w > eps(Float64)
-        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1]) - (1-cos(w))/w^2*skew(u*w) +
+        return SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1]) - (1-cos(w))/w^2*skew(u*w) +
                (w-sin(w))/w^3*skew(u*w)^2
     else
         # @warn "eps"
-        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1])
+        return SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1])
     end
 end
 
@@ -404,12 +397,12 @@ function Jrinv(xr::so3)
     u=xr.u
     w=xr.w
     if w > eps(Float64)
-        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1]) +
+        return SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1]) +
                0.5*skew(u*w) +
                (1/w^2-(1+cos(w))/(2w*sin(w)))*skew(u*w)^2
     else
         # @warn "eps"
-        return SMatrix{3,3,Float64}([1 0 0; 0 1 0; 0 0 1])
+        return SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1])
     end
 end
 """
@@ -537,8 +530,8 @@ The adjoint matrix.
 """
 function Adjm(X::SE3)
     SMatrix{6,6,Float64,36}([
-        X.rot.R skew(X.t)*X.rot.R
-        zeros(3, 3) X.rot.R
+        [X.rot.R skew(X.t)*X.rot.R]
+        [zeros(3, 3) X.rot.R]
     ])
 end
 
@@ -618,7 +611,7 @@ end
 function Jl(vw::se3)
     Jlw=Jl(vw.w)
     Q=internal_QJSE3(vw)
-    SMatrix{6,6,Float64,36}([Jlw Q; zeros(3, 3) Jlw])
+    SMatrix{6,6,Float64,36}([[Jlw Q];[zeros(3, 3) Jlw]])
 end
 """
     Jlinv(vw::se3)
@@ -626,7 +619,7 @@ end
 function Jlinv(vw::se3)
     Jlinvw=Jlinv(vw.w)
     Q=internal_QJSE3(vw)
-    SMatrix{6,6,Float64,36}([Jlinvw -Jlinvw*Q*Jlinvw; zeros(3, 3) Jlinvw])
+    SMatrix{6,6,Float64,36}([[Jlinvw -Jlinvw*Q*Jlinvw];[zeros(3, 3) Jlinvw]])
 end
 
 """
@@ -757,46 +750,13 @@ struct SE2
         new(t, rot)
     end
     @doc """
-        SE2(X::SMatrix{3,3,Float64})
+        SE2(X::SMatrix{3,3,Float64,9})
     """
-    function SE2(X::SMatrix{3,3,Float64})
-        new(X[1:2, 3], SO2(X[1:2, 1:2]))
+    function SE2(X::SMatrix{3,3,Float64,9})
+        Xr = SMatrix{2,2,Float64,4}(X[1,1],X[2,1],X[1,1],X[2,2])
+        new(X[1:2, 3], SO2(Xr))
     end
 end
-# SE2(x, y, th) = begin
-#     # @info "less efficient default method from SE2 (requires conversions)"
-#     SE2(convert(Float64, x), convert(Float64, y), convert(Float64, th))
-# end
-# SE2(x::Float64, y::Float64, th::Float64) = SE2(SA_F64[x, y], SO2(th))
-# SE2(t::Vector{Float64}, rot::SO2) = begin
-#     if length(t) != 2
-#         throw(DimensionMismatch)
-#     else
-#         # @info "SE2 ctor: dynamic vector input"
-#         SE2(SA_F64[t[1], t[2]], rot)
-#     end
-# end
-# SE2(t::Vector, th) = begin
-#     @assert(length(t) == 2)
-#     # @info "less efficient default method from SE2 (requires conversion to vector{Float64})"
-#     SE2(convert(Vector{Float64}, t), SO2(th))
-# end
-# SE2(t::Vector{Float64}, th::Float64) = SE2(t, SO2(th))
-# SE2(X::SMatrix{3,3,Float64}) = SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
-# SE2(X::Matrix) = begin
-#     @assert(size(X) == (3, 3))
-#     SE2(X[1:2, 3], SO2(X[1:2, 1:2]))
-# end
-
-# """
-#     MatrixDim(::Type{SE2})
-#
-#
-# Returns 3, the number of matrix row (or column) in the Lie algebra of SE2
-# """
-# function MatrixDim(::Type{SE2})
-#   3 # n(n+1)/2 with n=2
-# end
 
 """
     se2
@@ -1390,7 +1350,7 @@ end
 
 Quaternion constructor, but with validity check.
 """
-function safe_quaternion(q0::Real, q1::Real, q2::Real, q3::Real)
+function safe_quaternion(q0::Float64, q1::Float64, q2::Float64, q3::Float64)
     sum_squares = q0*q0 + q1*q1 + q2*q2 + q3*q3
     if isapprox(sum_squares, 1)
         Quaternion(q0, q1, q2, q3)
@@ -1424,7 +1384,7 @@ Base.length(::se3)=6
 @generated function Adjm(::Float64)::Float64
     1.0
 end
-@generated function Adjm(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+@generated function Adjm(::SVector{N,Float64}) where {N}
     cols=[
         begin
             z=zeros(N);
@@ -1432,7 +1392,7 @@ end
             z
         end for i = 1:N
     ]
-    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    Imat=SMatrix{N,N,Float64,N*N}(hcat(cols...))
     quote
         $Imat
     end
@@ -1523,7 +1483,7 @@ end
 """
     Jr(::SVector{N,Float64})
 """
-@generated function Jr(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+@generated function Jr(::SVector{N,Float64}) where {N}
     cols=[
         begin
             z=zeros(N);
@@ -1531,7 +1491,7 @@ end
             z
         end for i = 1:N
     ]
-    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    Imat=SMatrix{N,N,Float64,N*N}(hcat(cols...))
     quote
         $Imat
     end
@@ -1539,7 +1499,7 @@ end
 """
     Jrinv(::SVector{N,Float64})
 """
-@generated function Jrinv(::SVector{N,Float64})::SMatrix{N,N,Float64} where {N}
+@generated function Jrinv(::SVector{N,Float64}) where {N}
     cols=[
         begin
             z=zeros(N);
@@ -1547,7 +1507,7 @@ end
             z
         end for i = 1:N
     ]
-    Imat=SMatrix{N,N,Float64}(hcat(cols...))
+    Imat=SMatrix{N,N,Float64,N*N}(hcat(cols...))
     quote
         $Imat
     end
