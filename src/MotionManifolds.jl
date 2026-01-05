@@ -672,7 +672,6 @@ struct SO2
         SO2(co,si)
     """
     function SO2(co, si)
-        @show (co,si)
         new(atan(si, co), co, si)
     end
     @doc """
@@ -685,7 +684,6 @@ struct SO2
         SO2(R::SMatrix{2,2,Float64,4})
     """
     function SO2(R::SMatrix{2,2,Float64,4})
-        @show (R[1, 1], R[2, 1])
         SO2(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
     end
 end
