@@ -171,7 +171,7 @@ struct SO3
         SO3()
     """
     function SO3()
-        new(SVector{3,Float64}([1, 0, 0]), 0, SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1]))
+        new(SVector{3,Float64}([1, 0, 0]), 0., SMatrix{3,3,Float64,9}([1 0 0; 0 1 0; 0 0 1]))
     end
     #
     @doc """
@@ -672,6 +672,7 @@ struct SO2
         SO2(co,si)
     """
     function SO2(co, si)
+        @show (co,si)
         new(atan(si, co), co, si)
     end
     @doc """
@@ -684,7 +685,8 @@ struct SO2
         SO2(R::SMatrix{2,2,Float64,4})
     """
     function SO2(R::SMatrix{2,2,Float64,4})
-        new(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
+        @show (R[1, 1], R[2, 1])
+        SO2(R[1, 1], R[2, 1]) # TODO: check that R is legit orthogonal
     end
 end
 
