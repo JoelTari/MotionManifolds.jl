@@ -34,7 +34,7 @@ th2 = 43 * pi / 6;
 X = SE2(SA_F64[x, y], SO2(th))
 # Xc = SE2([x, y], th)
 # sk = log_lie(X)
-R = [cos(th) -sin(th); sin(th) cos(th)]
+R = SMatrix{2,2,Float64,4}([cos(th) -sin(th); sin(th) cos(th)])
 tau = SA_F64[23.0, -8, 0.9]
 tau0a = SA_F64[23.0, -8, 0]
 tauOOB = SA_F64[23.0, -8, 0.9-4*pi]
@@ -47,6 +47,7 @@ println(":: Starting the test set ::")
 
 @testset "MotionManifolds.jl" begin
     @test R ≈ to_matrix(SO2(th))
+    @test to_matrix(SO2(R)) ≈ to_matrix(SO2(th))
     @test to_matrix(SO2(th + th2)) ≈ to_matrix(SO2(th) * SO2(th2))
     @test SO2(th + th2).th ≈ (SO2(th) * SO2(th2)).th
     @test SO2(th + th2).th != (SO2(th) * SO2(th2 + 2 * pi)).th # th2 not the same +2pi
