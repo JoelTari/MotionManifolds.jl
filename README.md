@@ -104,14 +104,14 @@ julia> b = rand(SVector{3, Float64})
 julia> X + b    # action X.b
 ```
 
-## Documentation
-
-Api documentation can be generated with the following command:
-
-```bash
-julia --startup-file no --project=. -e 'using Pkg; Pkg.instantiate(); include("./make.jl")'  
-# open build 
-```
+<!-- ## Documentation -->
+<!---->
+<!-- Api documentation can be generated with the following command: -->
+<!---->
+<!-- ```bash -->
+<!-- julia --startup-file no --project=. -e 'using Pkg; Pkg.instantiate(); include("./make.jl")'   -->
+<!-- # open build  -->
+<!-- ``` -->
 
 ## License
 
