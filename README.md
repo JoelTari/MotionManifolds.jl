@@ -82,12 +82,12 @@ SE3([1.3783088969943498, 1.8731290028869272, 1.220467938988993], SO3([0.58907483
 
 julia> Y = rand(SE3);
 
-julia> X - Y == X + inv(Y)  #  
+julia> X - Y == X + inv(Y)  # 
 true
 
 julia> b = rand(SVector{3, Float64})
 
-julia> X + b    # action   X.b
+julia> X + b    # action X.b
 ```
 
 ## Documentation
