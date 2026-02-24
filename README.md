@@ -1,16 +1,20 @@
 # MotionManifolds
 
-`MotionManifolds` is a Julia package to compute Special Orthogonal and/or Special Euclidean objects, i.e., $\text{SO}(2)$, $\text{SO}(3)$ $\text{SE}(2)$ and $\text{SE}(3)$.
+## Summary
+
+`MotionManifolds` is a small Julia package to compute and manipulate Special Orthogonal and Special Euclidean manifolds, i.e., $\text{SO}(2)$, $\text{SO}(3)$ $\text{SE}(2)$ and $\text{SE}(3)$.  These types can be useful in robotics.
+This package is independent of [LieGroups.jl]( https://github.com/JuliaManifolds/LieGroups.jl ) from the JuliaManifolds ecosystem as our scope is limited to common motion Lie groups in robotics.
+This implementation is based on the C++ [manif]( https://github.com/artivis/manif ) library and associated [paper]( https://arxiv.org/abs/1812.01537 ).
 
 ## Quickstart
 
 ```julia
 git clone https://github.com/JoelTari/MotionManifolds.jl MotionManifolds
 cd MotionManifolds
-julia --project=. -e "using Pkg; Pkg.precompile()"
+julia --project=. -e "using Pkg; Pkg.instantiate(); Pkg.precompile()"
 ```
 
-## Usage
+## Examples
 
 Declare objects:
 ```julia
@@ -18,7 +22,7 @@ julia> using MotionManifolds
 
 julia> x = 1.0; y = 0.0; theta = pi/3;
 
-julia> X = SE2(x, y, theta) # declare SE2 object
+julia> X = SE2(x, y, theta) # declare a SE2 object
 SE2([1.0, 0.0], SO2(1.0471975511965976, 0.5000000000000001, 0.8660254037844386))
 
 julia> to_matrix(X)
@@ -32,23 +36,33 @@ julia> Y = rand(SO3); # random SO3 object
 julia> to_quat(Y)
 Quaternion(0.7864336220880247, 0.44836802694679684, 0.3699299570067636, 0.2089021239009323)
 
-julia> y = Log(Y) # projection to 
+julia> y = Log(Y) # log mapping to vector space isomorphic to the Lie algebra of Y
 3-element SVector{3, Float64} with indices SOneTo(3):
  0.966578657184116
  0.7974841639147566
  0.45034507874718005
 
-julia> yhat = hat(y, so3) # so3 object
+julia> yhat = hat(y, so3) # `hat` is isomorphic transformation to a so3 object. Type specification is necessary to disambiguate from se2 (which isomorphic vector space is also SVector{3, Float64})
 
-julia> vee(yhat) ≈  y
+julia> vee(yhat) ≈ y # `vee` is the isomorphic transformation to a vector (inverse of `hat`)
 true
+
+julia> Log(Exp(y)) ≈ y  # Exp 
+true
+```
+Keep in mind that the last relation might not hold true if `y` is high amplitude. E.g. the relation is false for an `so2` object with an angle not in $[-\pi,\pi]$:
+```julia
+julia> x=so2(pi+1) |> vee;
+
+julia> Log(Exp(x)) ≈ x
+false
 ```
 
 Derivatives and ajoints:
 ```julia
 julia> x = rand(se3);
 
-julia> Jr(x)
+julia> Jr(x)  # 'right' Jacobian of Exp(x)
 6×6 SMatrix{6, 6, Float64, 36} with indices SOneTo(6)×SOneTo(6):
   0.944793     0.0664991  -0.27411   -0.112466     0.33391    -0.202541
  -0.00637613   0.982418    0.161118  -0.223876    -0.0452179   0.195762
@@ -60,7 +74,7 @@ julia> Jr(x)
 julia> Jl(x) ≈ Jr(-x)
 true
 
-julia> Adjm(Exp(x))
+julia> Adjm(Exp(x))  # Adjoint.
 6×6 SMatrix{6, 6, Float64, 36} with indices SOneTo(6)×SOneTo(6):
   0.836816  0.0186794   0.547166  -0.327462  -0.37169     0.513498
   0.159037  0.948028   -0.27559    0.691523  -0.132075   -0.0552746
@@ -82,7 +96,7 @@ SE3([1.3783088969943498, 1.8731290028869272, 1.220467938988993], SO3([0.58907483
 
 julia> Y = rand(SE3);
 
-julia> X - Y == X + inv(Y)  # 
+julia> X - Y == X + inv(Y)  #  X \circ Y^{-1}
 true
 
 julia> b = rand(SVector{3, Float64})
@@ -92,8 +106,13 @@ julia> X + b    # action X.b
 
 ## Documentation
 
-Documentation of the API. 
+Api documentation can be generated with the following command:
 
-## Licence
+```bash
+julia --startup-file no --project=. -e 'using Pkg; Pkg.instantiate(); include("./make.jl")'  
+# open build 
+```
+
+## License
 
 BSD 2.0

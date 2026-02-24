@@ -3,6 +3,9 @@ uuid = "5f6a8d0c-4116-4dca-9d5b-d58249706984"
 authors = ["Joel Tari"]
 version = "2.12.2"
 
+[workspace]
+projects = ["docs"]
+
 [deps]
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
