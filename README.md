@@ -3,7 +3,7 @@
 ## Summary
 
 `MotionManifolds` is a small Julia package to compute and manipulate Special Orthogonal and Special Euclidean manifolds, i.e., $\text{SO}(2)$, $\text{SO}(3)$ $\text{SE}(2)$ and $\text{SE}(3)$.  These types can be useful in robotics.
-This package is independent of [LieGroups.jl]( https://github.com/JuliaManifolds/LieGroups.jl ) from the JuliaManifolds ecosystem as our scope is limited to common motion Lie groups in robotics.
+This package is independent of [LieGroups.jl]( https://github.com/JuliaManifolds/LieGroups.jl ) from the JuliaManifolds ecosystem as `MotionManifolds`'s scope is limited to commonly used motion Lie groups in robotics.
 This implementation is based on the C++ [manif]( https://github.com/artivis/manif ) library and associated [paper]( https://arxiv.org/abs/1812.01537 ).
 
 ## Quickstart
